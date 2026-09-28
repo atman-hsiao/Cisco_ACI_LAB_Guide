@@ -30,6 +30,13 @@ class EngineTests(unittest.TestCase):
         with patch.object(cli, "COLOR_ENABLED", False):
             self.assertEqual(cli.styled("MATCHED", "green"), "MATCHED")
 
+    def test_no_color_option_disables_color(self):
+        self.assertFalse(cli.configure_color(True))
+
+    def test_redirected_output_disables_color(self):
+        with patch.object(cli.sys.stdout, "isatty", return_value=False):
+            self.assertFalse(cli.configure_color(False))
+
     def test_matching_object_is_reported_as_matched(self):
         client = FakeClient({"uni/test": {"name": "test"}})
         engine = DeclarativeEngine(client)

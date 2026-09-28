@@ -33,6 +33,33 @@ def styled(text: str, color: str) -> str:
     return f"{COLORS[color]}{text}{RESET_COLOR}"
 
 
+def configure_color(no_color: bool) -> bool:
+    if no_color or "NO_COLOR" in os.environ or not sys.stdout.isatty():
+        return False
+    if os.name != "nt":
+        return True
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.windll.kernel32
+        kernel32.GetStdHandle.argtypes = [wintypes.DWORD]
+        kernel32.GetStdHandle.restype = wintypes.HANDLE
+        kernel32.GetConsoleMode.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        kernel32.GetConsoleMode.restype = wintypes.BOOL
+        kernel32.SetConsoleMode.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+        kernel32.SetConsoleMode.restype = wintypes.BOOL
+        stdout_handle = kernel32.GetStdHandle(-11)
+        invalid_handle = ctypes.c_void_p(-1).value
+        mode = wintypes.DWORD()
+        if stdout_handle in (None, invalid_handle) or not kernel32.GetConsoleMode(stdout_handle, ctypes.byref(mode)):
+            return False
+        enable_virtual_terminal_processing = 0x0004
+        return bool(kernel32.SetConsoleMode(stdout_handle, mode.value | enable_virtual_terminal_processing))
+    except (AttributeError, OSError):
+        return False
+
+
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="aci_lab.py", description="Cisco ACI LAB Guide 自動化工具")
     p.add_argument("command", choices=["status", "prepare", "apply", "verify", "cleanup", "reset-fabric"])
@@ -98,7 +125,7 @@ def connected(config: LabConfig, username: str, password: str) -> ApicClient:
 def run(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     global COLOR_ENABLED
-    COLOR_ENABLED = not args.no_color and "NO_COLOR" not in os.environ and sys.stdout.isatty()
+    COLOR_ENABLED = configure_color(args.no_color)
     root = args.config_root.resolve()
     try:
         config = LabConfig(root)
