@@ -59,9 +59,14 @@ class ApicClient:
             timeout=self.timeout,
             **kwargs,
         )
-        response.raise_for_status()
-        data = response.json() if response.content else {"imdata": []}
+        try:
+            data = response.json() if response.content else {"imdata": []}
+        except ValueError:
+            data = {"imdata": []}
         self._raise_for_apic_error(data)
+        if not response.ok:
+            detail = response.text[:500].replace("\n", " ")
+            raise ApicError(f"HTTP {response.status_code} {method} {path}: {detail}")
         return data
 
     @staticmethod
@@ -100,13 +105,25 @@ class ApicClient:
         rows = self.query_class("infraWiNode")
         controllers = [r for r in rows if str(r.get("id", "")) in {"1", "2", "3"}]
         healthy_words = {"fully-fit", "fullyFit", "available", "in-service"}
-        fully_fit = len(controllers) == 3 and all(
-            any(str(r.get(k, "")) in healthy_words for k in ("health", "operSt", "state"))
-            for r in controllers
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for row in controllers:
+            grouped.setdefault(str(row.get("id")), []).append(row)
+        fully_fit = set(grouped) == {"1", "2", "3"} and all(
+            any(
+                str(r.get(k, "")) in healthy_words
+                for r in records
+                for k in ("health", "operSt", "state")
+            )
+            for records in grouped.values()
         )
-        active = sum(1 for r in controllers if str(r.get("operSt", r.get("state", ""))) not in {"unavailable", "out-of-service", "inactive"})
+        inactive_words = {"unavailable", "out-of-service", "inactive"}
+        active = sum(
+            1 for records in grouped.values()
+            if any(str(r.get("operSt", r.get("state", ""))) not in inactive_words for r in records)
+        )
         quorum = active >= 2
-        return fully_fit, quorum, controllers
+        unique = [grouped[key][0] for key in sorted(grouped)]
+        return fully_fit, quorum, unique
 
     def discovered_switch_serials(self) -> set[str]:
         rows = self.query_class("fabricLooseNode")

@@ -20,11 +20,6 @@ objects:
   - class: mgmtRsOoBStNode
     dn: "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-202]"
     attributes: {tDn: topology/pod-1/node-202, addr: 192.168.255.22/24, gw: 192.168.255.254}
-  - {class: vzFilter, dn: uni/tn-mgmt/flt-FLT_OOB_PERMIT_ALL, attributes: {name: FLT_OOB_PERMIT_ALL, descr: Cisco ACI LAB Guide}}
-  - {class: vzEntry, dn: uni/tn-mgmt/flt-FLT_OOB_PERMIT_ALL/e-PERMIT_ALL, attributes: {name: PERMIT_ALL, etherT: unspecified}}
-  - {class: vzBrCP, dn: uni/tn-mgmt/brc-OOB_PERMIT_ALL, attributes: {name: OOB_PERMIT_ALL, scope: tenant, descr: Cisco ACI LAB Guide}}
-  - {class: vzSubj, dn: uni/tn-mgmt/brc-OOB_PERMIT_ALL/subj-SUBJ_OOB, attributes: {name: SUBJ_OOB}}
-  - {class: vzRsSubjFiltAtt, dn: uni/tn-mgmt/brc-OOB_PERMIT_ALL/subj-SUBJ_OOB/rssubjFiltAtt-FLT_OOB_PERMIT_ALL, attributes: {tnVzFilterName: FLT_OOB_PERMIT_ALL}}
   - {class: mgmtInstP, dn: uni/tn-mgmt/extmgmt-default/instp-LAB_OOB, attributes: {name: LAB_OOB, descr: Cisco ACI LAB Guide}}
   - {class: mgmtSubnet, dn: "uni/tn-mgmt/extmgmt-default/instp-LAB_OOB/subnet-[0.0.0.0/0]", attributes: {ip: 0.0.0.0/0}}
-  - {class: fvRsCons, dn: uni/tn-mgmt/extmgmt-default/instp-LAB_OOB/rscons-OOB_PERMIT_ALL, attributes: {tnVzBrCPName: OOB_PERMIT_ALL}}
+  - {class: mgmtRsOoBCons, dn: uni/tn-mgmt/extmgmt-default/instp-LAB_OOB/rsooBCons-oob-default, attributes: {tnVzOOBBrCPName: oob-default}}
