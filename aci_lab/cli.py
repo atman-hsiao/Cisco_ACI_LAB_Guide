@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import os
 import sys
 from pathlib import Path
 
@@ -16,12 +17,28 @@ AUTOMATED_FIRST_CHAPTER = 4
 AUTOMATED_LAST_CHAPTER = 11
 CLEANUP_FIRST_CHAPTER = 5
 
+COLORS = {
+    "green": "\033[32m",
+    "cyan": "\033[36m",
+    "yellow": "\033[93m",
+    "red": "\033[91m",
+}
+RESET_COLOR = "\033[0m"
+COLOR_ENABLED = False
+
+
+def styled(text: str, color: str) -> str:
+    if not COLOR_ENABLED:
+        return text
+    return f"{COLORS[color]}{text}{RESET_COLOR}"
+
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="aci_lab.py", description="Cisco ACI LAB Guide 自動化工具")
     p.add_argument("command", choices=["status", "prepare", "apply", "verify", "cleanup", "reset-fabric"])
     p.add_argument("--chapter", type=int, choices=range(1, 14))
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--no-color", action="store_true", help="停用終端狀態顏色")
     p.add_argument("--config-root", type=Path, default=Path(__file__).resolve().parents[1])
     return p
 
@@ -37,7 +54,13 @@ def credentials() -> tuple[str, str]:
 def print_changes(changes) -> bool:
     ok = True
     for item in changes:
-        print(f"Chapter {item.chapter:02d} {item.action:9s} {item.dn}")
+        action = styled(f"{item.action:9s}", {
+            "MATCHED": "green",
+            "CREATE": "cyan",
+            "UPDATE": "yellow",
+            "DELETE": "red",
+        }.get(item.action, "yellow"))
+        print(f"Chapter {item.chapter:02d} {action} {item.dn}")
         for key, values in item.differences.items():
             print(f"  {key}: {values[0]!r} -> {values[1]!r}")
         if item.action != "MATCHED":
@@ -48,9 +71,9 @@ def print_changes(changes) -> bool:
 def confirm_cluster(client: ApicClient, write: bool) -> None:
     fully_fit, quorum, rows = client.cluster_health()
     if fully_fit:
-        print("APIC Cluster: Fully Fit")
+        print(f"APIC Cluster: {styled('Fully Fit', 'green')}")
         return
-    print("警告：APIC Cluster 並非 Fully Fit")
+    print(styled("警告：APIC Cluster 並非 Fully Fit", "yellow"))
     for row in rows:
         print(f"  Controller {row.get('id', '?')}: {row.get('health', row.get('operSt', row.get('state', 'unknown')))}")
     if write and not quorum:
@@ -68,12 +91,14 @@ def connected(config: LabConfig, username: str, password: str) -> ApicClient:
     endpoint = client.login()
     print(f"APIC Endpoint: {endpoint}")
     if not mgmt["verify_tls"]:
-        print("警告：TLS 憑證驗證已關閉，只適用於隔離 LAB。")
+        print(styled("警告：TLS 憑證驗證已關閉，只適用於隔離 LAB。", "yellow"))
     return client
 
 
 def run(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
+    global COLOR_ENABLED
+    COLOR_ENABLED = not args.no_color and "NO_COLOR" not in os.environ and sys.stdout.isatty()
     root = args.config_root.resolve()
     try:
         config = LabConfig(root)
@@ -91,7 +116,7 @@ def run(argv: list[str] | None = None) -> int:
     except Exception as exc:
         logger = exception_logger(root)
         logger.exception("command=%s chapter=%s error=%s", args.command, args.chapter, exc)
-        print(f"錯誤：{exc}", file=sys.stderr)
+        print(styled(f"錯誤：{exc}", "red"), file=sys.stderr)
         return 1
 
 
@@ -101,7 +126,8 @@ def run_policy_command(config: LabConfig, engine: DeclarativeEngine, args: argpa
         for chapter in config.chapter_range(AUTOMATED_FIRST_CHAPTER, AUTOMATED_LAST_CHAPTER):
             changes = engine.inspect_chapter(chapter)
             ok = all(c.action == "MATCHED" for c in changes)
-            print(f"Chapter {chapter['chapter']:02d} - {chapter['name']}: {'PASS' if ok else 'INCOMPLETE'}")
+            state = styled("PASS", "green") if ok else styled("INCOMPLETE", "yellow")
+            print(f"Chapter {chapter['chapter']:02d} - {chapter['name']}: {state}")
             all_ok &= ok
         return 0 if all_ok else 2
 

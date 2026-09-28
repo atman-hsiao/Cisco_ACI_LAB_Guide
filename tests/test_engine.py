@@ -1,7 +1,9 @@
 import unittest
+from unittest.mock import patch
 
 from aci_lab.apic import ObjectState
 from aci_lab.engine import DeclarativeEngine
+from aci_lab import cli
 
 
 class FakeClient:
@@ -22,6 +24,12 @@ class FakeClient:
 
 
 class EngineTests(unittest.TestCase):
+    def test_status_color_can_be_enabled_and_disabled(self):
+        with patch.object(cli, "COLOR_ENABLED", True):
+            self.assertEqual(cli.styled("MATCHED", "green"), "\033[32mMATCHED\033[0m")
+        with patch.object(cli, "COLOR_ENABLED", False):
+            self.assertEqual(cli.styled("MATCHED", "green"), "MATCHED")
+
     def test_matching_object_is_reported_as_matched(self):
         client = FakeClient({"uni/test": {"name": "test"}})
         engine = DeclarativeEngine(client)
