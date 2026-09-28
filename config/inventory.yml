@@ -1,0 +1,26 @@
+apics:
+  - {name: APIC1, controller_id: 1, management_ip: 192.168.255.1, cimc_ip: 192.168.255.41, pod_id: 1, model: APIC-SERVER-L3, version: "5.2(7f)"}
+  - {name: APIC2, controller_id: 2, management_ip: 192.168.255.2, cimc_ip: 192.168.255.42, pod_id: 1, model: APIC-SERVER-L3, version: "5.2(7f)"}
+  - {name: APIC3, controller_id: 3, management_ip: 192.168.255.3, cimc_ip: 192.168.255.43, pod_id: 1, model: APIC-SERVER-L3, version: "5.2(7f)"}
+switches:
+  - {role: spine, name: POC-S101, node_id: 101, serial: SAL1938P7BJ, management_ip: 192.168.255.11, pod_id: 1, model: N9K-C9336PQ, version: "14.2(7f)"}
+  - {role: leaf, name: POC-L201, node_id: 201, serial: FDO223907JF, management_ip: 192.168.255.21, pod_id: 1, model: N9K-C93180YC-EX, version: "15.2(7f)"}
+  - {role: leaf, name: POC-L202, node_id: 202, serial: FDO213917EN, management_ip: 192.168.255.22, pod_id: 1, model: N9K-C93180YC-EX, version: "14.2(7f)"}
+links:
+  - {a: APIC1, a_interface: fabric, b: POC-L201, b_interface: eth1/46}
+  - {a: APIC2, a_interface: fabric, b: POC-L201, b_interface: eth1/47}
+  - {a: APIC3, a_interface: fabric, b: POC-L201, b_interface: eth1/48}
+  - {a: POC-L201, a_interface: eth1/53, b: POC-S101, b_interface: eth1/1}
+  - {a: POC-L202, a_interface: eth1/53, b: POC-S101, b_interface: eth1/2}
+esxi:
+  - name: POC-SRV1
+    management_ip: 192.168.255.31
+    static_uplinks:
+      - {vmnic: vmnic2, leaf: 201, interface: eth1/1}
+      - {vmnic: vmnic3, leaf: 202, interface: eth1/1}
+  - name: POC-SRV2
+    management_ip: 192.168.255.32
+    static_uplinks:
+      - {vmnic: vmnic2, leaf: 201, interface: eth1/2}
+      - {vmnic: vmnic3, leaf: 202, interface: eth1/2}
+

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["chapter", "name", "objects"],
+  "properties": {
+    "chapter": {"type": "integer", "minimum": 4, "maximum": 11},
+    "name": {"type": "string", "minLength": 1},
+    "manual_prerequisite": {"type": "string"},
+    "objects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["class", "dn", "attributes"],
+        "properties": {
+          "class": {"type": "string", "minLength": 1},
+          "dn": {"type": "string", "minLength": 3},
+          "attributes": {"type": "object"},
+          "attribute_aliases": {"type": "object"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+

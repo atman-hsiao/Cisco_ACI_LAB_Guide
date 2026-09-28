@@ -1,0 +1,14 @@
+chapter: 9
+name: Application Profile and EPGs
+objects:
+  - {class: fvAp, dn: uni/tn-TN_POC/ap-AP_POC, attributes: {name: AP_POC, descr: Cisco ACI LAB Guide}}
+  - {class: fvAEPg, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB, attributes: {name: EPG_WEB, descr: Cisco ACI LAB Guide}}
+  - {class: fvRsBd, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB/rsbd, attributes: {tnFvBDName: BD_WEB}}
+  - {class: fvRsDomAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB/rsdomAtt-[uni/phys-DOM_PHY_WEB]", attributes: {tDn: uni/phys-DOM_PHY_WEB, instrImedcy: immediate, resImedcy: immediate}}
+  - {class: fvAEPg, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP, attributes: {name: EPG_AP, descr: Cisco ACI LAB Guide}}
+  - {class: fvRsBd, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rsbd, attributes: {tnFvBDName: BD_AP}}
+  - {class: fvRsDomAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rsdomAtt-[uni/phys-DOM_PHY_AP]", attributes: {tDn: uni/phys-DOM_PHY_AP, instrImedcy: immediate, resImedcy: immediate}}
+  - {class: fvAEPg, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB, attributes: {name: EPG_DB, descr: Cisco ACI LAB Guide}}
+  - {class: fvRsBd, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB/rsbd, attributes: {tnFvBDName: BD_DB}}
+  - {class: fvRsDomAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB/rsdomAtt-[uni/phys-DOM_PHY_DB]", attributes: {tDn: uni/phys-DOM_PHY_DB, instrImedcy: immediate, resImedcy: immediate}}
+

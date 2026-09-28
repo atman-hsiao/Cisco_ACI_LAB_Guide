@@ -1,0 +1,19 @@
+chapter: 6
+name: VLAN Pools Physical Domains and AAEP
+objects:
+  - {class: fvnsVlanInstP, dn: "uni/infra/vlanns-[VLAN_WEB]-static", attributes: {name: VLAN_WEB, allocMode: static, descr: Cisco ACI LAB Guide}}
+  - {class: fvnsEncapBlk, dn: "uni/infra/vlanns-[VLAN_WEB]-static/from-[vlan-2101]-to-[vlan-2110]", attributes: {from: vlan-2101, to: vlan-2110, allocMode: static}}
+  - {class: fvnsVlanInstP, dn: "uni/infra/vlanns-[VLAN_AP]-static", attributes: {name: VLAN_AP, allocMode: static, descr: Cisco ACI LAB Guide}}
+  - {class: fvnsEncapBlk, dn: "uni/infra/vlanns-[VLAN_AP]-static/from-[vlan-2201]-to-[vlan-2210]", attributes: {from: vlan-2201, to: vlan-2210, allocMode: static}}
+  - {class: fvnsVlanInstP, dn: "uni/infra/vlanns-[VLAN_DB]-static", attributes: {name: VLAN_DB, allocMode: static, descr: Cisco ACI LAB Guide}}
+  - {class: fvnsEncapBlk, dn: "uni/infra/vlanns-[VLAN_DB]-static/from-[vlan-2301]-to-[vlan-2310]", attributes: {from: vlan-2301, to: vlan-2310, allocMode: static}}
+  - {class: physDomP, dn: uni/phys-DOM_PHY_WEB, attributes: {name: DOM_PHY_WEB, descr: Cisco ACI LAB Guide}}
+  - {class: infraRsVlanNs, dn: uni/phys-DOM_PHY_WEB/rsvlanNs, attributes: {tDn: "uni/infra/vlanns-[VLAN_WEB]-static"}}
+  - {class: physDomP, dn: uni/phys-DOM_PHY_AP, attributes: {name: DOM_PHY_AP, descr: Cisco ACI LAB Guide}}
+  - {class: infraRsVlanNs, dn: uni/phys-DOM_PHY_AP/rsvlanNs, attributes: {tDn: "uni/infra/vlanns-[VLAN_AP]-static"}}
+  - {class: physDomP, dn: uni/phys-DOM_PHY_DB, attributes: {name: DOM_PHY_DB, descr: Cisco ACI LAB Guide}}
+  - {class: infraRsVlanNs, dn: uni/phys-DOM_PHY_DB/rsvlanNs, attributes: {tDn: "uni/infra/vlanns-[VLAN_DB]-static"}}
+  - {class: infraAttEntityP, dn: uni/infra/attentp-AEP_PHY, attributes: {name: AEP_PHY, descr: Cisco ACI LAB Guide}}
+  - {class: infraRsDomP, dn: "uni/infra/attentp-AEP_PHY/rsdomP-[uni/phys-DOM_PHY_WEB]", attributes: {tDn: uni/phys-DOM_PHY_WEB}}
+  - {class: infraRsDomP, dn: "uni/infra/attentp-AEP_PHY/rsdomP-[uni/phys-DOM_PHY_AP]", attributes: {tDn: uni/phys-DOM_PHY_AP}}
+  - {class: infraRsDomP, dn: "uni/infra/attentp-AEP_PHY/rsdomP-[uni/phys-DOM_PHY_DB]", attributes: {tDn: uni/phys-DOM_PHY_DB}}

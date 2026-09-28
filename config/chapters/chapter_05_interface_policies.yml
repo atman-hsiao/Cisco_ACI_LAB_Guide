@@ -1,0 +1,7 @@
+chapter: 5
+name: Access Interface Policies
+objects:
+  - {class: fabricHIfPol, dn: uni/infra/hintfpol-IntPol-1G-Auto, attributes: {name: IntPol-1G-Auto, speed: 1G, autoNeg: "on", descr: Cisco ACI LAB Guide}}
+  - {class: cdpIfPol, dn: uni/infra/cdpIfP-IntPol-CDP-Enable, attributes: {name: IntPol-CDP-Enable, adminSt: enabled, descr: Cisco ACI LAB Guide}}
+  - {class: lldpIfPol, dn: uni/infra/lldpIfP-IntPol-LLDP-Enable, attributes: {name: IntPol-LLDP-Enable, adminRxSt: enabled, adminTxSt: enabled, descr: Cisco ACI LAB Guide}}
+

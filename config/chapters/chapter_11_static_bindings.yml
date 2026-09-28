@@ -1,0 +1,16 @@
+chapter: 11
+name: Static Port Bindings
+objects:
+  - &web2011 {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB/rspathAtt-[topology/pod-1/paths-201/pathep-[eth1/1]]", attributes: {tDn: "topology/pod-1/paths-201/pathep-[eth1/1]", encap: vlan-2101, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB/rspathAtt-[topology/pod-1/paths-201/pathep-[eth1/2]]", attributes: {tDn: "topology/pod-1/paths-201/pathep-[eth1/2]", encap: vlan-2101, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB/rspathAtt-[topology/pod-1/paths-202/pathep-[eth1/1]]", attributes: {tDn: "topology/pod-1/paths-202/pathep-[eth1/1]", encap: vlan-2101, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB/rspathAtt-[topology/pod-1/paths-202/pathep-[eth1/2]]", attributes: {tDn: "topology/pod-1/paths-202/pathep-[eth1/2]", encap: vlan-2101, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rspathAtt-[topology/pod-1/paths-201/pathep-[eth1/1]]", attributes: {tDn: "topology/pod-1/paths-201/pathep-[eth1/1]", encap: vlan-2201, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rspathAtt-[topology/pod-1/paths-201/pathep-[eth1/2]]", attributes: {tDn: "topology/pod-1/paths-201/pathep-[eth1/2]", encap: vlan-2201, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rspathAtt-[topology/pod-1/paths-202/pathep-[eth1/1]]", attributes: {tDn: "topology/pod-1/paths-202/pathep-[eth1/1]", encap: vlan-2201, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rspathAtt-[topology/pod-1/paths-202/pathep-[eth1/2]]", attributes: {tDn: "topology/pod-1/paths-202/pathep-[eth1/2]", encap: vlan-2201, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB/rspathAtt-[topology/pod-1/paths-201/pathep-[eth1/1]]", attributes: {tDn: "topology/pod-1/paths-201/pathep-[eth1/1]", encap: vlan-2301, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB/rspathAtt-[topology/pod-1/paths-201/pathep-[eth1/2]]", attributes: {tDn: "topology/pod-1/paths-201/pathep-[eth1/2]", encap: vlan-2301, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB/rspathAtt-[topology/pod-1/paths-202/pathep-[eth1/1]]", attributes: {tDn: "topology/pod-1/paths-202/pathep-[eth1/1]", encap: vlan-2301, mode: regular, instrImedcy: immediate}}
+  - {class: fvRsPathAtt, dn: "uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB/rspathAtt-[topology/pod-1/paths-202/pathep-[eth1/2]]", attributes: {tDn: "topology/pod-1/paths-202/pathep-[eth1/2]", encap: vlan-2301, mode: regular, instrImedcy: immediate}}
+

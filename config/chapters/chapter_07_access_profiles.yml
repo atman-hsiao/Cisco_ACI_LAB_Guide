@@ -1,0 +1,30 @@
+chapter: 7
+name: Leaf Interface Policy Group and Switch Profiles
+objects:
+  - {class: infraAccPortGrp, dn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G, attributes: {name: IfPolGrp-Access-Server_1G, descr: Cisco ACI LAB Guide}}
+  - {class: infraRsHIfPol, dn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G/rshIfPol, attributes: {tnFabricHIfPolName: IntPol-1G-Auto}}
+  - {class: infraRsCdpIfPol, dn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G/rscdpIfPol, attributes: {tnCdpIfPolName: IntPol-CDP-Enable}}
+  - {class: infraRsLldpIfPol, dn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G/rslldpIfPol, attributes: {tnLldpIfPolName: IntPol-LLDP-Enable}}
+  - {class: infraRsAttEntP, dn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G/rsattEntP, attributes: {tDn: uni/infra/attentp-AEP_PHY}}
+  - {class: infraAccPortP, dn: uni/infra/accportprof-IntProf-LF201, attributes: {name: IntProf-LF201, descr: Cisco ACI LAB Guide}}
+  - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSel-eth1_1-typ-range, attributes: {name: IntSel-eth1_1, type: range}}
+  - {class: infraPortBlk, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSel-eth1_1-typ-range/portblk-block1, attributes: {name: block1, fromCard: "1", toCard: "1", fromPort: "1", toPort: "1"}}
+  - {class: infraRsAccBaseGrp, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSel-eth1_1-typ-range/rsaccBaseGrp, attributes: {tDn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G}}
+  - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSel-eth1_2-typ-range, attributes: {name: IntSel-eth1_2, type: range}}
+  - {class: infraPortBlk, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSel-eth1_2-typ-range/portblk-block1, attributes: {name: block1, fromCard: "1", toCard: "1", fromPort: "2", toPort: "2"}}
+  - {class: infraRsAccBaseGrp, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSel-eth1_2-typ-range/rsaccBaseGrp, attributes: {tDn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G}}
+  - {class: infraAccPortP, dn: uni/infra/accportprof-IntProf-LF202, attributes: {name: IntProf-LF202, descr: Cisco ACI LAB Guide}}
+  - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF202/hports-IntSel-eth1_1-typ-range, attributes: {name: IntSel-eth1_1, type: range}}
+  - {class: infraPortBlk, dn: uni/infra/accportprof-IntProf-LF202/hports-IntSel-eth1_1-typ-range/portblk-block1, attributes: {name: block1, fromCard: "1", toCard: "1", fromPort: "1", toPort: "1"}}
+  - {class: infraRsAccBaseGrp, dn: uni/infra/accportprof-IntProf-LF202/hports-IntSel-eth1_1-typ-range/rsaccBaseGrp, attributes: {tDn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G}}
+  - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF202/hports-IntSel-eth1_2-typ-range, attributes: {name: IntSel-eth1_2, type: range}}
+  - {class: infraPortBlk, dn: uni/infra/accportprof-IntProf-LF202/hports-IntSel-eth1_2-typ-range/portblk-block1, attributes: {name: block1, fromCard: "1", toCard: "1", fromPort: "2", toPort: "2"}}
+  - {class: infraRsAccBaseGrp, dn: uni/infra/accportprof-IntProf-LF202/hports-IntSel-eth1_2-typ-range/rsaccBaseGrp, attributes: {tDn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G}}
+  - {class: infraNodeP, dn: uni/infra/nprof-SwProf-LF201, attributes: {name: SwProf-LF201, descr: Cisco ACI LAB Guide}}
+  - {class: infraLeafS, dn: uni/infra/nprof-SwProf-LF201/leaves-Leaf201-typ-range, attributes: {name: Leaf201, type: range}}
+  - {class: infraNodeBlk, dn: uni/infra/nprof-SwProf-LF201/leaves-Leaf201-typ-range/nodeblk-block1, attributes: {name: block1, from_: "201", to_: "201"}, attribute_aliases: {from_: from, to_: to}}
+  - {class: infraRsAccPortP, dn: "uni/infra/nprof-SwProf-LF201/rsaccPortP-[uni/infra/accportprof-IntProf-LF201]", attributes: {tDn: uni/infra/accportprof-IntProf-LF201}}
+  - {class: infraNodeP, dn: uni/infra/nprof-SwProf-LF202, attributes: {name: SwProf-LF202, descr: Cisco ACI LAB Guide}}
+  - {class: infraLeafS, dn: uni/infra/nprof-SwProf-LF202/leaves-Leaf202-typ-range, attributes: {name: Leaf202, type: range}}
+  - {class: infraNodeBlk, dn: uni/infra/nprof-SwProf-LF202/leaves-Leaf202-typ-range/nodeblk-block1, attributes: {name: block1, from_: "202", to_: "202"}, attribute_aliases: {from_: from, to_: to}}
+  - {class: infraRsAccPortP, dn: "uni/infra/nprof-SwProf-LF202/rsaccPortP-[uni/infra/accportprof-IntProf-LF202]", attributes: {tDn: uni/infra/accportprof-IntProf-LF202}}

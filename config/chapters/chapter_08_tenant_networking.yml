@@ -1,0 +1,15 @@
+chapter: 8
+name: Tenant VRF and Bridge Domains
+objects:
+  - {class: fvTenant, dn: uni/tn-TN_POC, attributes: {name: TN_POC, descr: Cisco ACI LAB Guide}}
+  - {class: fvCtx, dn: uni/tn-TN_POC/ctx-VRF_POC, attributes: {name: VRF_POC, descr: Cisco ACI LAB Guide}}
+  - {class: fvBD, dn: uni/tn-TN_POC/BD-BD_WEB, attributes: {name: BD_WEB, unicastRoute: "yes", unkMacUcastAct: flood, arpFlood: "yes", descr: Cisco ACI LAB Guide}}
+  - {class: fvRsCtx, dn: uni/tn-TN_POC/BD-BD_WEB/rsctx, attributes: {tnFvCtxName: VRF_POC}}
+  - {class: fvSubnet, dn: "uni/tn-TN_POC/BD-BD_WEB/subnet-[10.1.0.254/24]", attributes: {ip: 10.1.0.254/24, scope: public}}
+  - {class: fvBD, dn: uni/tn-TN_POC/BD-BD_AP, attributes: {name: BD_AP, unicastRoute: "yes", unkMacUcastAct: flood, arpFlood: "yes", descr: Cisco ACI LAB Guide}}
+  - {class: fvRsCtx, dn: uni/tn-TN_POC/BD-BD_AP/rsctx, attributes: {tnFvCtxName: VRF_POC}}
+  - {class: fvSubnet, dn: "uni/tn-TN_POC/BD-BD_AP/subnet-[10.2.0.254/24]", attributes: {ip: 10.2.0.254/24, scope: public}}
+  - {class: fvBD, dn: uni/tn-TN_POC/BD-BD_DB, attributes: {name: BD_DB, unicastRoute: "yes", unkMacUcastAct: flood, arpFlood: "yes", descr: Cisco ACI LAB Guide}}
+  - {class: fvRsCtx, dn: uni/tn-TN_POC/BD-BD_DB/rsctx, attributes: {tnFvCtxName: VRF_POC}}
+  - {class: fvSubnet, dn: "uni/tn-TN_POC/BD-BD_DB/subnet-[10.3.0.254/24]", attributes: {ip: 10.3.0.254/24, scope: public}}
+

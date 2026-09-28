@@ -1,0 +1,20 @@
+project_name: Cisco ACI LAB Guide
+fabric_name: default
+infrastructure_vlan: 3967
+tep_pool: default
+management:
+  prefix: 24
+  gateway: 192.168.255.254
+  external_subnet: 0.0.0.0/0
+  verify_tls: false
+  request_timeout_seconds: 30
+  api_endpoint_order: [192.168.255.1, 192.168.255.2, 192.168.255.3]
+safety:
+  reset_confirmation: RESET TN_POC FABRIC
+  require_all_device_ssh_before_reset: true
+  require_cimc_reachable_before_reset: true
+  block_policy_writes_without_quorum: true
+logging:
+  directory: logs
+  write_on: [warning, error]
+
