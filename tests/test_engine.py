@@ -30,6 +30,10 @@ class EngineTests(unittest.TestCase):
         with patch.object(cli, "COLOR_ENABLED", False):
             self.assertEqual(cli.styled("MATCHED", "green"), "MATCHED")
 
+    def test_warning_is_red_when_color_is_enabled(self):
+        with patch.object(cli, "COLOR_ENABLED", True):
+            self.assertEqual(cli.warning("警告"), "\033[91m警告\033[0m")
+
     def test_no_color_option_disables_color(self):
         self.assertFalse(cli.configure_color(True))
 

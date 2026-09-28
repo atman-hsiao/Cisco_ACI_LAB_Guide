@@ -33,6 +33,11 @@ def styled(text: str, color: str) -> str:
     return f"{COLORS[color]}{text}{RESET_COLOR}"
 
 
+def warning(text: str) -> str:
+    """Format every user-facing warning consistently in red."""
+    return styled(text, "red")
+
+
 def configure_color(no_color: bool) -> bool:
     if no_color or "NO_COLOR" in os.environ or not sys.stdout.isatty():
         return False
@@ -100,7 +105,7 @@ def confirm_cluster(client: ApicClient, write: bool) -> None:
     if fully_fit:
         print(f"APIC Cluster: {styled('Fully Fit', 'green')}")
         return
-    print(styled("警告：APIC Cluster 並非 Fully Fit", "yellow"))
+    print(warning("警告：APIC Cluster 並非 Fully Fit"))
     for row in rows:
         print(f"  Controller {row.get('id', '?')}: {row.get('health', row.get('operSt', row.get('state', 'unknown')))}")
     if write and not quorum:
@@ -118,7 +123,7 @@ def connected(config: LabConfig, username: str, password: str) -> ApicClient:
     endpoint = client.login()
     print(f"APIC Endpoint: {endpoint}")
     if not mgmt["verify_tls"]:
-        print(styled("警告：TLS 憑證驗證已關閉，只適用於隔離 LAB。", "yellow"))
+        print(warning("警告：TLS 憑證驗證已關閉，只適用於隔離 LAB。"))
     return client
 
 
@@ -193,7 +198,7 @@ def run_policy_command(config: LabConfig, engine: DeclarativeEngine, args: argpa
         if first < CLEANUP_FIRST_CHAPTER:
             first = CLEANUP_FIRST_CHAPTER
         chapters = config.chapter_range(first, AUTOMATED_LAST_CHAPTER)
-        print("將刪除下列 LAB 章節物件：" + ", ".join(str(c["chapter"]) for c in chapters))
+        print(warning("警告：將刪除下列 LAB 章節物件：" + ", ".join(str(c["chapter"]) for c in chapters)))
         if not args.dry_run and input("輸入 CLEANUP 確認: ").strip() != "CLEANUP":
             raise RuntimeError("使用者取消 Cleanup")
         result = engine.cleanup_chapters(chapters)
@@ -212,7 +217,7 @@ def validate_discovered_switches(config: LabConfig, client: ApicClient) -> None:
 
 def reset_fabric(config: LabConfig, username: str, password: str, dry_run: bool) -> int:
     resetter = FabricResetter(config.inventory, username, password, dry_run=dry_run)
-    print("警告：此操作會清除 APIC Fabric/Cluster 與所有交換器 Fabric 設定，且無法復原。")
+    print(warning("警告：此操作會清除 APIC Fabric/Cluster 與所有交換器 Fabric 設定，且無法復原。"))
     print("CIMC 設定與 192.168.255.41-43 將被保留。")
     for target in resetter.targets():
         print(f"  {target.kind.upper():6s} {target.name:10s} {target.host}")

@@ -19,7 +19,7 @@ python aci_lab.py status
 
 驗證結果中的 `MATCHED` 表示物件已存在，且 LAB 管理的欄位符合預期；`CREATE` 表示物件尚未建立；`UPDATE` 表示既有物件的受管理欄位需要修正。
 
-互動式終端會以顏色標示狀態：`MATCHED`/`PASS` 為綠色、`CREATE` 為青色、`UPDATE`/`INCOMPLETE`/警告為黃色、`DELETE`/錯誤為紅色。在 Windows 上，工具會先啟用 Virtual Terminal Processing；若主控台不支援，或輸出重新導向至檔案，則自動停用顏色。也可加入 `--no-color`，或設定 `NO_COLOR` 環境變數停用。
+互動式終端會以顏色標示狀態：`MATCHED`/`PASS` 為綠色、`CREATE` 為青色、`UPDATE`/`INCOMPLETE` 為黃色、所有警告/`DELETE`/錯誤為紅色。在 Windows 上，工具會先啟用 Virtual Terminal Processing；若主控台不支援，或輸出重新導向至檔案，則自動停用顏色。也可加入 `--no-color`，或設定 `NO_COLOR` 環境變數停用。
 
 ## LAB 實體拓撲
 
