@@ -36,7 +36,7 @@ class DeclarativeEngine:
                 changes.append(Change(chapter["chapter"], "CREATE", obj["dn"]))
                 continue
             diff = self.differences(state.attributes, obj["attributes"])
-            changes.append(Change(chapter["chapter"], "UPDATE" if diff else "UNCHANGED", obj["dn"], diff))
+            changes.append(Change(chapter["chapter"], "UPDATE" if diff else "MATCHED", obj["dn"], diff))
         return changes
 
     def apply_chapter(self, chapter: dict[str, Any]) -> list[Change]:
@@ -49,7 +49,7 @@ class DeclarativeEngine:
                 obj = by_dn[change.dn]
                 self.client.upsert(obj["class"], obj["dn"], obj["attributes"])
         verification = self.inspect_chapter(chapter)
-        failed = [item for item in verification if item.action != "UNCHANGED"]
+        failed = [item for item in verification if item.action != "MATCHED"]
         if failed:
             dns = ", ".join(item.dn for item in failed)
             raise RuntimeError(f"章節 {chapter['chapter']} 寫入後驗證失敗: {dns}")

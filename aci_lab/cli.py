@@ -40,7 +40,7 @@ def print_changes(changes) -> bool:
         print(f"Chapter {item.chapter:02d} {item.action:9s} {item.dn}")
         for key, values in item.differences.items():
             print(f"  {key}: {values[0]!r} -> {values[1]!r}")
-        if item.action != "UNCHANGED":
+        if item.action != "MATCHED":
             ok = False
     return ok
 
@@ -100,7 +100,7 @@ def run_policy_command(config: LabConfig, engine: DeclarativeEngine, args: argpa
         all_ok = True
         for chapter in config.chapter_range(AUTOMATED_FIRST_CHAPTER, AUTOMATED_LAST_CHAPTER):
             changes = engine.inspect_chapter(chapter)
-            ok = all(c.action == "UNCHANGED" for c in changes)
+            ok = all(c.action == "MATCHED" for c in changes)
             print(f"Chapter {chapter['chapter']:02d} - {chapter['name']}: {'PASS' if ok else 'INCOMPLETE'}")
             all_ok &= ok
         return 0 if all_ok else 2

@@ -22,6 +22,15 @@ class FakeClient:
 
 
 class EngineTests(unittest.TestCase):
+    def test_matching_object_is_reported_as_matched(self):
+        client = FakeClient({"uni/test": {"name": "test"}})
+        engine = DeclarativeEngine(client)
+        result = engine.inspect_chapter({
+            "chapter": 4,
+            "objects": [{"class": "testClass", "dn": "uni/test", "attributes": {"name": "test"}}],
+        })
+        self.assertEqual(result[0].action, "MATCHED")
+
     chapter = {"chapter": 8, "objects": [{"class": "fvTenant", "dn": "uni/tn-TN_POC", "attributes": {"name": "TN_POC"}}]}
 
     def test_create_missing_object(self):

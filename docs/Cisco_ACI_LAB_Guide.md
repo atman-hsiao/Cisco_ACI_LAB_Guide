@@ -17,6 +17,8 @@ python aci_lab.py status
 
 所有命令執行時都會要求輸入帳號與隱藏密碼。APIC 使用自簽憑證，因此本 LAB 的 `verify_tls` 為 `false`。
 
+驗證結果中的 `MATCHED` 表示物件已存在，且 LAB 管理的欄位符合預期；`CREATE` 表示物件尚未建立；`UPDATE` 表示既有物件的受管理欄位需要修正。
+
 ## LAB 實體拓撲
 
 ```mermaid
