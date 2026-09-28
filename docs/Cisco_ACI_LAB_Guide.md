@@ -164,7 +164,8 @@ Setup Utility 必須人工完成。工具從 Cluster 可登入後才接手。
 2. 依序核對序號並設定：101/POC-S101、201/POC-L201、202/POC-L202，Pod 均為 1。
 3. 前往 **Tenants > mgmt > Node Management Addresses**，建立 OOB Node Management Policy。
 4. 設定 Spine `.11/24`、Leaf `.21/24`、`.22/24`，Gateway `.254`。
-5. 建立允許 `0.0.0.0/0` 的 External Management Network，並關聯 APIC 內建的 `oob-default` OOB Contract。
+5. 在 `mgmt` Tenant 建立 `oob-default` OOB Contract，使用 `default` Filter，並由 Out-of-Band EPG `default` 提供此 Contract。
+6. 建立允許 `0.0.0.0/0` 的 `LAB_OOB` External Management Network，並設為 `oob-default` Contract 的 Consumer。
 
 ## 驗證方式
 

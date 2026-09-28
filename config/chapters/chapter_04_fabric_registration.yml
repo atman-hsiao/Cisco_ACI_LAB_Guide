@@ -20,6 +20,10 @@ objects:
   - class: mgmtRsOoBStNode
     dn: "uni/tn-mgmt/mgmtp-default/oob-default/rsooBStNode-[topology/pod-1/node-202]"
     attributes: {tDn: topology/pod-1/node-202, addr: 192.168.255.22/24, gw: 192.168.255.254}
+  - {class: vzOOBBrCP, dn: uni/tn-mgmt/oobbrc-oob-default, attributes: {name: oob-default, descr: Cisco ACI LAB Guide}}
+  - {class: vzSubj, dn: uni/tn-mgmt/oobbrc-oob-default/subj-oob-default, attributes: {name: oob-default}}
+  - {class: vzRsSubjFiltAtt, dn: uni/tn-mgmt/oobbrc-oob-default/subj-oob-default/rssubjFiltAtt-default, attributes: {tnVzFilterName: default}}
+  - {class: mgmtRsOoBProv, dn: uni/tn-mgmt/mgmtp-default/oob-default/rsooBProv-oob-default, attributes: {tnVzOOBBrCPName: oob-default}}
   - {class: mgmtInstP, dn: uni/tn-mgmt/extmgmt-default/instp-LAB_OOB, attributes: {name: LAB_OOB, descr: Cisco ACI LAB Guide}}
   - {class: mgmtSubnet, dn: "uni/tn-mgmt/extmgmt-default/instp-LAB_OOB/subnet-[0.0.0.0/0]", attributes: {ip: 0.0.0.0/0}}
   - {class: mgmtRsOoBCons, dn: uni/tn-mgmt/extmgmt-default/instp-LAB_OOB/rsooBCons-oob-default, attributes: {tnVzOOBBrCPName: oob-default}}
