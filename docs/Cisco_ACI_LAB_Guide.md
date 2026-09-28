@@ -178,6 +178,8 @@ python aci_lab.py apply --chapter 4
 python aci_lab.py verify --chapter 4
 ```
 
+執行第 4 章自動套用前，工具會確認三台交換器的序號存在於 Fabric 待探索清單或已註冊節點清單；已完成 Node Registration 的交換器不會因為離開待探索清單而被誤判為缺少。
+
 ## 清理與重做
 
 一般 `cleanup` 保留 Node Registration 與 OOB Management；只有 `reset-fabric` 會清除 Fabric Membership。

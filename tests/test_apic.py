@@ -34,5 +34,22 @@ class ApicClusterTests(unittest.TestCase):
         self.assertFalse(quorum)
 
 
+class InventoryClient(ApicClient):
+    def __init__(self, rows_by_class):
+        self.rows_by_class = rows_by_class
+
+    def query_class(self, class_name):
+        return self.rows_by_class.get(class_name, [])
+
+
+class SwitchInventoryTests(unittest.TestCase):
+    def test_available_serials_include_loose_and_registered_nodes(self):
+        client = InventoryClient({
+            "fabricLooseNode": [{"serial": "LOOSE1"}],
+            "fabricNode": [{"serial": "REGISTERED1"}, {"id": "201"}],
+        })
+        self.assertEqual(client.available_switch_serials(), {"LOOSE1", "REGISTERED1"})
+
+
 if __name__ == "__main__":
     unittest.main()

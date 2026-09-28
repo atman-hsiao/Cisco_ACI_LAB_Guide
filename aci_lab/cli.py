@@ -204,11 +204,10 @@ def run_policy_command(config: LabConfig, engine: DeclarativeEngine, args: argpa
 
 def validate_discovered_switches(config: LabConfig, client: ApicClient) -> None:
     expected = {str(item["serial"]) for item in config.inventory["switches"]}
-    discovered = client.discovered_switch_serials()
-    if discovered != expected:
-        missing = sorted(expected - discovered)
-        unexpected = sorted(discovered - expected)
-        raise RuntimeError(f"Fabric Discovery 序號不符；缺少={missing}，未預期={unexpected}")
+    available = client.available_switch_serials()
+    if not expected.issubset(available):
+        missing = sorted(expected - available)
+        raise RuntimeError(f"Fabric Discovery/Registration 序號不符；缺少={missing}")
 
 
 def reset_fabric(config: LabConfig, username: str, password: str, dry_run: bool) -> int:

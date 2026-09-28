@@ -125,6 +125,11 @@ class ApicClient:
         unique = [grouped[key][0] for key in sorted(grouped)]
         return fully_fit, quorum, unique
 
-    def discovered_switch_serials(self) -> set[str]:
-        rows = self.query_class("fabricLooseNode")
-        return {str(row.get("serial") or row.get("id") or "") for row in rows if row.get("serial") or row.get("id")}
+    def available_switch_serials(self) -> set[str]:
+        """Return serials for switches that are pending discovery or already registered."""
+        rows = self.query_class("fabricLooseNode") + self.query_class("fabricNode")
+        return {
+            str(row["serial"])
+            for row in rows
+            if row.get("serial")
+        }
