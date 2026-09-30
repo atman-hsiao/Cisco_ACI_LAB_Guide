@@ -377,11 +377,13 @@ python .\aci_lab.py verify --chapter 5
 1. 前往 **Physical and External Domains > Physical Domains**。
 2. 建立：
 
-| Physical Domain | VLAN Pool | Description |
-|---|---|---|
-| DOM_PHY_WEB | VLAN_WEB | Cisco ACI LAB Guide |
-| DOM_PHY_AP | VLAN_AP | Cisco ACI LAB Guide |
-| DOM_PHY_DB | VLAN_DB | Cisco ACI LAB Guide |
+| Physical Domain | VLAN Pool |
+|---|---|
+| DOM_PHY_WEB | VLAN_WEB |
+| DOM_PHY_AP | VLAN_AP |
+| DOM_PHY_DB | VLAN_DB |
+
+APIC 5.2(7f) 的 Physical Domain (`physDomP`) 不接受 Description 屬性，因此此處不要填寫 Description。
 
 ## Task 3：建立 AAEP
 

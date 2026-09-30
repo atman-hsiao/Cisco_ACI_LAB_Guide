@@ -23,5 +23,15 @@ class ChapterFourConfigTests(unittest.TestCase):
         )
 
 
+class ChapterSixConfigTests(unittest.TestCase):
+    def test_physical_domains_do_not_send_unsupported_description(self):
+        path = Path(__file__).resolve().parents[1] / "config" / "chapters" / "chapter_06_domains_aaep.yml"
+        chapter = yaml.safe_load(path.read_text(encoding="utf-8"))
+        domains = [obj for obj in chapter["objects"] if obj["class"] == "physDomP"]
+
+        self.assertEqual(len(domains), 3)
+        self.assertTrue(all(set(obj["attributes"]) == {"name"} for obj in domains))
+
+
 if __name__ == "__main__":
     unittest.main()
