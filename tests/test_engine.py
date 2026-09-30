@@ -69,6 +69,38 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(changes[0].action, "CREATE")
         self.assertFalse(client.writes)
 
+    def test_apply_deletes_only_matching_obsolete_object(self):
+        client = FakeClient({
+            "uni/current": {"name": "CURRENT"},
+            "uni/old": {"name": "OLD", "descr": "Cisco ACI LAB Guide"},
+            "uni/user": {"name": "USER", "descr": "owned elsewhere"},
+        })
+        chapter = {
+            "chapter": 6,
+            "objects": [{"class": "testClass", "dn": "uni/current", "attributes": {"name": "CURRENT"}}],
+            "obsolete_objects": [
+                {"class": "testClass", "dn": "uni/old", "match_attributes": {"name": "OLD", "descr": "Cisco ACI LAB Guide"}},
+                {"class": "testClass", "dn": "uni/user", "match_attributes": {"name": "USER", "descr": "Cisco ACI LAB Guide"}},
+            ],
+        }
+        result = DeclarativeEngine(client).apply_chapter(chapter)
+        self.assertIn("uni/old", [item.dn for item in result if item.action == "DELETE"])
+        self.assertNotIn("uni/old", client.objects)
+        self.assertIn("uni/user", client.objects)
+
+    def test_cleanup_deletes_matching_obsolete_object(self):
+        client = FakeClient({"uni/old": {"name": "OLD", "descr": "Cisco ACI LAB Guide"}})
+        chapter = {
+            "chapter": 6,
+            "objects": [],
+            "obsolete_objects": [
+                {"class": "testClass", "dn": "uni/old", "match_attributes": {"name": "OLD", "descr": "Cisco ACI LAB Guide"}},
+            ],
+        }
+        result = DeclarativeEngine(client).cleanup_chapters([chapter])
+        self.assertEqual(result[0].action, "DELETE")
+        self.assertNotIn("uni/old", client.objects)
+
 
 if __name__ == "__main__":
     unittest.main()

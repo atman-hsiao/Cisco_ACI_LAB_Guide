@@ -19,8 +19,20 @@
         },
         "additionalProperties": false
       }
+    },
+    "obsolete_objects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["class", "dn", "match_attributes"],
+        "properties": {
+          "class": {"type": "string", "minLength": 1},
+          "dn": {"type": "string", "minLength": 3},
+          "match_attributes": {"type": "object"}
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": false
 }
-

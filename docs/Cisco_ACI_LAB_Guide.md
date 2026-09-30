@@ -366,9 +366,9 @@ python .\aci_lab.py verify --chapter 5
 
 | Name | Allocation Mode | Range From | Range To | Block Mode |
 |---|---|---:|---:|---|
-| VLAN_WEB | Static Allocation | 2101 | 2110 | Static Allocation |
-| VLAN_AP | Static Allocation | 2201 | 2210 | Static Allocation |
-| VLAN_DB | Static Allocation | 2301 | 2310 | Static Allocation |
+| VLAN_WEB_STATIC | Static Allocation | 2101 | 2110 | Static Allocation |
+| VLAN_AP_STATIC | Static Allocation | 2201 | 2210 | Static Allocation |
+| VLAN_DB_STATIC | Static Allocation | 2301 | 2310 | Static Allocation |
 
 每個 Pool 的 Description 填入 `Cisco ACI LAB Guide`。建立 Encap Block 時先按 `+`，輸入 From/To，再按 **OK** 與 **Submit**。
 
@@ -379,9 +379,9 @@ python .\aci_lab.py verify --chapter 5
 
 | Physical Domain | VLAN Pool |
 |---|---|
-| DOM_PHY_WEB | VLAN_WEB |
-| DOM_PHY_AP | VLAN_AP |
-| DOM_PHY_DB | VLAN_DB |
+| DOM_PHY_WEB | VLAN_WEB_STATIC |
+| DOM_PHY_AP | VLAN_AP_STATIC |
+| DOM_PHY_DB | VLAN_DB_STATIC |
 
 APIC 5.2(7f) 的 Physical Domain (`physDomP`) 不接受 Description 屬性，因此此處不要填寫 Description。
 
@@ -791,7 +791,7 @@ python .\aci_lab.py cleanup --chapter 8
 | 類別 | 物件 |
 |---|---|
 | Interface Policies | IntPol-1G-Auto, IntPol-CDP-Enable, IntPol-LLDP-Enable |
-| VLAN Pools | VLAN_WEB, VLAN_AP, VLAN_DB |
+| VLAN Pools | VLAN_WEB_STATIC, VLAN_AP_STATIC, VLAN_DB_STATIC |
 | Physical Domains | DOM_PHY_WEB, DOM_PHY_AP, DOM_PHY_DB |
 | AAEP / Policy Group | AEP_PHY / IfPolGrp-Access-Server_1G |
 | Interface Profiles | IntProf-LF201, IntProf-LF202 |

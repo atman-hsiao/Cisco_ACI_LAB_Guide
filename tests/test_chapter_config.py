@@ -24,13 +24,24 @@ class ChapterFourConfigTests(unittest.TestCase):
 
 
 class ChapterSixConfigTests(unittest.TestCase):
-    def test_physical_domains_do_not_send_unsupported_description(self):
+    def load_chapter(self):
         path = Path(__file__).resolve().parents[1] / "config" / "chapters" / "chapter_06_domains_aaep.yml"
-        chapter = yaml.safe_load(path.read_text(encoding="utf-8"))
+        return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    def test_physical_domains_do_not_send_unsupported_description(self):
+        chapter = self.load_chapter()
         domains = [obj for obj in chapter["objects"] if obj["class"] == "physDomP"]
 
         self.assertEqual(len(domains), 3)
         self.assertTrue(all(set(obj["attributes"]) == {"name"} for obj in domains))
+
+    def test_static_vlan_pool_names_include_allocation_suffix(self):
+        chapter = self.load_chapter()
+        pools = [obj for obj in chapter["objects"] if obj["class"] == "fvnsVlanInstP"]
+        self.assertEqual(
+            {obj["attributes"]["name"] for obj in pools},
+            {"VLAN_WEB_STATIC", "VLAN_AP_STATIC", "VLAN_DB_STATIC"},
+        )
 
 
 if __name__ == "__main__":

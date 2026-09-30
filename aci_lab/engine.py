@@ -37,6 +37,10 @@ class DeclarativeEngine:
                 continue
             diff = self.differences(state.attributes, obj["attributes"])
             changes.append(Change(chapter["chapter"], "UPDATE" if diff else "MATCHED", obj["dn"], diff))
+        for obj in chapter.get("obsolete_objects", []):
+            state = self.client.get_object(obj["dn"])
+            if state.exists and not self.differences(state.attributes, obj.get("match_attributes", {})):
+                changes.append(Change(chapter["chapter"], "DELETE", obj["dn"]))
         return changes
 
     def apply_chapter(self, chapter: dict[str, Any]) -> list[Change]:
@@ -48,6 +52,11 @@ class DeclarativeEngine:
             if change.action in {"CREATE", "UPDATE"}:
                 obj = by_dn[change.dn]
                 self.client.upsert(obj["class"], obj["dn"], obj["attributes"])
+        obsolete_by_dn = {obj["dn"]: obj for obj in chapter.get("obsolete_objects", [])}
+        for change in changes:
+            if change.action == "DELETE" and change.dn in obsolete_by_dn:
+                obj = obsolete_by_dn[change.dn]
+                self.client.delete(obj["class"], obj["dn"])
         verification = self.inspect_chapter(chapter)
         failed = [item for item in verification if item.action != "MATCHED"]
         if failed:
@@ -61,6 +70,12 @@ class DeclarativeEngine:
             for obj in reversed(chapter["objects"]):
                 state = self.client.get_object(obj["dn"])
                 if state.exists:
+                    results.append(Change(chapter["chapter"], "DELETE", obj["dn"]))
+                    if not self.dry_run:
+                        self.client.delete(obj["class"], obj["dn"])
+            for obj in chapter.get("obsolete_objects", []):
+                state = self.client.get_object(obj["dn"])
+                if state.exists and not self.differences(state.attributes, obj.get("match_attributes", {})):
                     results.append(Change(chapter["chapter"], "DELETE", obj["dn"]))
                     if not self.dry_run:
                         self.client.delete(obj["class"], obj["dn"])
