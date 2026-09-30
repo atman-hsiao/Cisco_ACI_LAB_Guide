@@ -1,482 +1,814 @@
 # Cisco ACI LAB Guide
 
-本手冊帶領 ACI 初學者在三台 APIC、一台 Spine、兩台 Leaf 的實體環境中完成一套可重複的 Static Port LAB。每章先以 APIC GUI 手動建立，再用同一套 Python 工具驗證、補齊前置狀態或清理重做。APIC 是唯一狀態來源；工具不依賴本機的完成紀錄。
+本手冊帶領 ACI 初學者在三台 APIC、一台 Spine、兩台 Leaf 的實體 LAB 中，從環境初始化一路完成 Access Policy、Tenant、Bridge Domain、Application Profile、EPG、Contract、Static Port Binding 與 VM Ping 驗證。
 
-> **重要警告**：`reset-fabric` 會清除整個 Fabric，無法復原。只有確認六台設備身分、三台 CIMC 可用，並輸入完整確認字串後才可執行。本手冊的 Permit All 與 `0.0.0.0/0` OOB 存取只適用於隔離 LAB。
+每章先說明設定目的，再提供完整選單路徑、逐步操作、必填參數、驗證結果與對應自動化命令。建議先使用 GUI 手動完成，再執行 `verify`；若要跳過已學過的章節，可用 `prepare` 建立前置環境。
 
-## 使用方式
+> **重要警告**：Permit All、Public Subnet Scope 與允許 `0.0.0.0/0` 存取 OOB Management 的設定只適用隔離 LAB。`reset-fabric` 會清除 Fabric，且無法復原。
 
-在 Windows 10 跳板機開啟 PowerShell：
+## 如何閱讀本手冊
+
+- **選單路徑**：從 APIC GUI 頂端選單開始的完整導覽路徑。
+- **Field Name / Value**：必須輸入或選擇的欄位；未列出的欄位維持預設值。
+- **驗證結果**：完成工作項目後應看到的狀態。
+- **自動化對照**：檢查、建立或還原本章環境的命令。
+
+| 狀態 | 意義 |
+|---|---|
+| `MATCHED` | 物件存在，且 LAB 管理欄位符合預期 |
+| `CREATE` | 物件不存在，需要建立 |
+| `UPDATE` | 物件存在，但受管理欄位需要修正 |
+| `DELETE` | Cleanup 將刪除物件 |
+| `PASS` | 本章全部符合預期 |
+| `INCOMPLETE` | 本章仍有物件需要建立或修正 |
+
+互動式終端中，`MATCHED`/`PASS` 為綠色、`CREATE` 為青色、`UPDATE`/`INCOMPLETE` 為黃色，警告、`DELETE` 與錯誤為紅色。可用 `--no-color` 停用顏色。
+
+## LAB 設備
+
+| 角色 | 名稱 | ID | 型號/版本 | OOB IP | CIMC IP | 序號 |
+|---|---|---:|---|---|---|---|
+| APIC | APIC1 | 1 | APIC-SERVER-L3 / 5.2(7f) | 192.168.255.1/24 | 192.168.255.41 | - |
+| APIC | APIC2 | 2 | APIC-SERVER-L3 / 5.2(7f) | 192.168.255.2/24 | 192.168.255.42 | - |
+| APIC | APIC3 | 3 | APIC-SERVER-L3 / 5.2(7f) | 192.168.255.3/24 | 192.168.255.43 | - |
+| Spine | POC-S101 | 101 | N9K-C9336PQ / 14.2(7f) | 192.168.255.11/24 | - | SAL1938P7BJ |
+| Leaf | POC-L201 | 201 | N9K-C93180YC-EX / 15.2(7f) | 192.168.255.21/24 | - | FDO223907JF |
+| Leaf | POC-L202 | 202 | N9K-C93180YC-EX / 14.2(7f) | 192.168.255.22/24 | - | FDO213917EN |
+
+所有管理 IP 的 Gateway 為 `192.168.255.254`，Pod ID 為 `1`。
+
+## 實體接線
+
+| A 端 | A 端介面 | B 端 | B 端介面 | 用途 |
+|---|---|---|---|---|
+| APIC1 | Fabric | POC-L201 | eth1/46 | APIC Fabric Link |
+| APIC2 | Fabric | POC-L201 | eth1/47 | APIC Fabric Link |
+| APIC3 | Fabric | POC-L201 | eth1/48 | APIC Fabric Link |
+| POC-L201 | eth1/53 | POC-S101 | eth1/1 | Fabric Link |
+| POC-L202 | eth1/53 | POC-S101 | eth1/2 | Fabric Link |
+| POC-SRV1 vmnic2 | - | POC-L201 | eth1/1 | Static Port Uplink |
+| POC-SRV1 vmnic3 | - | POC-L202 | eth1/1 | Static Port Uplink |
+| POC-SRV2 vmnic2 | - | POC-L201 | eth1/2 | Static Port Uplink |
+| POC-SRV2 vmnic3 | - | POC-L202 | eth1/2 | Static Port Uplink |
+
+Leaf `eth1/3-4` 與 ESXi `vmnic4-5` 保留給未來 VMM LAB，本版不可配置。
+
+## Tenant 邏輯設計
+
+| EPG | Bridge Domain | Gateway | VLAN | Contract 角色 |
+|---|---|---|---:|---|
+| EPG_WEB | BD_WEB | 10.1.0.254/24 | 2101 | Consumer of `web_app` |
+| EPG_AP | BD_AP | 10.2.0.254/24 | 2201 | Provider of `web_app`; Consumer of `app_db` |
+| EPG_DB | BD_DB | 10.3.0.254/24 | 2301 | Provider of `app_db` |
+
+三個 Bridge Domain 都屬於 `VRF_POC`，三個 EPG 都位於 `AP_POC`。
+
+# 第 1 章 LAB 架構、接線與跳板機準備
+
+## 本章目標
+
+確認實體接線與管理網路，並在 Windows 10 跳板機準備 Python 虛擬環境。本章不修改 APIC。
+
+## Task 1：核對接線
+
+1. 依照「實體接線」表核對三台 APIC 到 POC-L201 的連線。
+2. 核對兩台 Leaf 的 `eth1/53` 到 Spine 的連線。
+3. 核對 POC-SRV1 的 `vmnic2/3` 到兩台 Leaf 的 `eth1/1`。
+4. 核對 POC-SRV2 的 `vmnic2/3` 到兩台 Leaf 的 `eth1/2`。
+5. 確認 Leaf `eth1/3-4` 沒有被納入本次 LAB。
+
+## Task 2：確認管理網路
+
+在 PowerShell 測試三台 CIMC：
+
+```powershell
+Test-NetConnection 192.168.255.41 -Port 443
+Test-NetConnection 192.168.255.42 -Port 443
+Test-NetConnection 192.168.255.43 -Port 443
+```
+
+`TcpTestSucceeded` 應為 `True`。若 APIC 已初始化，再測試 `192.168.255.1-3` 的 TCP 443。
+
+## Task 3：準備 Python
+
+1. 進入專案根目錄。
+
+```powershell
+cd C:\Users\POC\Desktop\ACILAB\Cisco_ACI_LAB_Guide
+```
+
+2. 建立並啟用虛擬環境。
 
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python aci_lab.py status
 ```
 
-所有命令執行時都會要求輸入帳號與隱藏密碼。APIC 使用自簽憑證，因此本 LAB 的 `verify_tls` 為 `false`。
+3. 確認 Python 路徑。
 
-驗證結果中的 `MATCHED` 表示物件已存在，且 LAB 管理的欄位符合預期；`CREATE` 表示物件尚未建立；`UPDATE` 表示既有物件的受管理欄位需要修正。
-
-互動式終端會以顏色標示狀態：`MATCHED`/`PASS` 為綠色、`CREATE` 為青色、`UPDATE`/`INCOMPLETE` 為黃色、所有警告/`DELETE`/錯誤為紅色。在 Windows 上，工具會先啟用 Virtual Terminal Processing；若主控台不支援，或輸出重新導向至檔案，則自動停用顏色。也可加入 `--no-color`，或設定 `NO_COLOR` 環境變數停用。
-
-## LAB 實體拓撲
-
-```mermaid
-flowchart TB
-  A1[APIC1 192.168.255.1] -->|Leaf eth1/46| L201[POC-L201 Node 201]
-  A2[APIC2 192.168.255.2] -->|Leaf eth1/47| L201
-  A3[APIC3 192.168.255.3] -->|Leaf eth1/48| L201
-  L201 -->|eth1/53 to eth1/1| S[POC-S101 Node 101]
-  L202[POC-L202 Node 202] -->|eth1/53 to eth1/2| S
-  H1[POC-SRV1] -->|vmnic2 eth1/1| L201
-  H1 -->|vmnic3 eth1/1| L202
-  H2[POC-SRV2] -->|vmnic2 eth1/2| L201
-  H2 -->|vmnic3 eth1/2| L202
+```powershell
+python -c "import sys; print(sys.executable)"
 ```
 
-## Tenant 邏輯拓撲
+預期路徑結尾為 `.venv\Scripts\python.exe`。
 
-```mermaid
-flowchart LR
-  W[EPG_WEB VLAN 2101\nBD_WEB 10.1.0.254/24] -->|Consumes web_app| A[EPG_AP VLAN 2201\nBD_AP 10.2.0.254/24]
-  A -->|Consumes app_db| D[EPG_DB VLAN 2301\nBD_DB 10.3.0.254/24]
-  V[VRF_POC] --- W
-  V --- A
-  V --- D
+## 本章驗證
+
+```powershell
+python .\aci_lab.py --help
 ```
 
-# 第 1 章 LAB 架構 接線與前置需求
-
-## 學習目標
-
-辨識所有設備、管理位址、Fabric 介面與 ESXi Static Port 路徑，並準備 Windows Python 環境。
-
-## 概念說明
-
-Fabric 只有 Pod 1。三台 APIC 都接在 Leaf 201；兩台 Leaf 各以 `eth1/53` 上聯同一台 Spine。Static Port 只使用 Leaf 201/202 的 `eth1/1-2`，`eth1/3-4` 保留給未來 VMM LAB。
-
-## 前置檢查
-
-1. 從跳板機確認 APIC `192.168.255.1-3`、CIMC `192.168.255.41-43` 與交換器 OOB 可達。
-2. 確認 ESXi 已有 Standard vSwitch，`vmnic2/3` 為雙 Active，負載平衡採 Route based on originating virtual port ID。
-3. 確認 VM 與 Port Group 已存在；本手冊不修改 VMware。
-
-## 驗證方式
-
-執行 `python aci_lab.py status`。尚未建立 Fabric 時連線失敗是預期結果。
-
-## 自動化與清理
-
-本章沒有寫入操作。`--dry-run` 可用來檢查命令格式。
-
-## 常見錯誤
-
-- 跳板機未安裝 Python 或未啟用 `.venv`。
-- Windows 防火牆、管理交換器或 Gateway 阻擋 SSH/HTTPS。
-- 將預留給 VMM 的 `eth1/3-4` 誤納入本 LAB。
+應看到 `status`、`prepare`、`apply`、`verify`、`cleanup`、`reset-fabric`。
 
 # 第 2 章 完整環境重置
 
-## 學習目標
+## 本章目標
 
-將 APIC 與三台 ACI Switch 回復到可重新初始化與探索的狀態，同時保留 CIMC。
+將交換器清回可探索狀態，並將 APIC 清回 Setup Utility 狀態。CIMC 不會被重置。
 
-## 概念說明
+> **破壞性操作**：若只要重做 Access Policy 或 Tenant，請使用第 13 章的 `cleanup`。
 
-工具依 Cisco Clean Initialization 流程先清除並重新載入交換器，再對 APIC 執行 `acidiag touch clean`、`acidiag touch setup` 與 reboot。CIMC 不會被重置。
-
-## 操作步驟
-
-先預覽：
+## Task 1：預覽
 
 ```powershell
-python aci_lab.py reset-fabric --dry-run
+python .\aci_lab.py reset-fabric --dry-run
 ```
 
-正式執行：
+1. 核對目標是否為 APIC1-3、POC-S101、POC-L201、POC-L202。
+2. 確認畫面顯示 `DRY RUN`；此模式不連線、不清除、不重新啟動。
+
+## Task 2：正式重置
+
+1. 確認三台 CIMC KVM 可用，並記錄第 3 章參數。
+2. 執行：
 
 ```powershell
-python aci_lab.py reset-fabric
+python .\aci_lab.py reset-fabric
 ```
 
-閱讀警告與設備清單後，輸入：
+3. 輸入共用管理帳號與密碼。
+4. 等待 Preflight 檢查 CIMC、SSH、交換器序號與 APIC Hostname。
+5. 只有確定要清除時，完整輸入：
 
 ```text
 RESET TN_POC FABRIC
 ```
 
-## 驗證方式
+## 本章驗證
 
-1. 三台 CIMC 仍可登入。
-2. APIC 重新開機後進入初始設定狀態。
-3. Spine 與 Leaf 開機後不再保留舊 Fabric Policy，可被重新探索。
-
-## 自動化與清理
-
-本章本身就是完整重置。它與一般 `cleanup` 完全不同，不可用於只想重做單一章節的情境。
-
-## 常見錯誤
-
-- 任一 CIMC 或 SSH 目標不可達時，Preflight 會停止。
-- 重置後 APIC OOB 尚未完成 Setup Utility，API 暫時無法使用。
-- 不可中斷正在寫入 clean marker 或 reload 的設備。
+1. CIMC 仍可用原 IP 登入。
+2. APIC 開機後顯示 Setup Utility。
+3. Spine/Leaf 不再保留舊 Fabric Policy，可重新探索。
 
 # 第 3 章 APIC Setup Utility 與 Cluster 建立
 
-## 學習目標
+## 本章目標
 
-透過 CIMC KVM 初始化三台 APIC，建立三節點 Cluster。
+透過 CIMC KVM 初始化三台 APIC，使三個 Controller 加入同一 Fabric 並達到 Fully Fit。
 
-## GUI 與主控台步驟
+## Task 1：初始化 APIC1
 
-1. 依序登入 CIMC `192.168.255.41-43` 並開啟 KVM。
-2. APIC1 選擇建立新 Fabric，Controller ID 設為 1，名稱 `APIC1`。
-3. Fabric Name 與 TEP Pool 接受畫面預設值；Infrastructure VLAN 輸入 `3967`。
-4. OOB 設為 `192.168.255.1/24`，Gateway `192.168.255.254`。
-5. APIC2/3 使用相同 Fabric 參數，ID/名稱分別為 `2/APIC2`、`3/APIC3`，OOB 為 `.2`、`.3`。
-6. 等待 Cluster 完成同步。
+1. 登入 `https://192.168.255.41`，開啟 KVM Console。
+2. 在 Setup Utility 選擇建立新 Fabric。
+3. 輸入下表；未列出的欄位維持預設值。
 
-## 驗證方式
+| Field Name | Value |
+|---|---|
+| Fabric Name | 接受現場預設值；三台必須相同 |
+| Fabric ID | Default |
+| Number of Controllers | 3 |
+| Controller ID | 1 |
+| Controller Name | APIC1 |
+| TEP Address Pool | 接受現場預設值；三台必須相同 |
+| Infrastructure VLAN ID | 3967 |
+| OOB Management IP | 192.168.255.1/24 |
+| OOB Default Gateway | 192.168.255.254 |
 
-登入任一 APIC GUI，前往 **System > Controllers**，確認三台 Controller 為 Fully Fit。
+4. 完成 Setup，等待 APIC1 服務啟動。
 
-## 自動化與清理
+## Task 2：初始化 APIC2 與 APIC3
 
-Setup Utility 必須人工完成。工具從 Cluster 可登入後才接手。
+分別登入 CIMC `.42` 與 `.43`，使用與 APIC1 完全相同的 Fabric Name、TEP Pool、Infrastructure VLAN 與 Cluster Size：
 
-## 常見錯誤
+| APIC | Controller ID | Controller Name | OOB Management IP | Gateway |
+|---|---:|---|---|---|
+| APIC2 | 2 | APIC2 | 192.168.255.2/24 | 192.168.255.254 |
+| APIC3 | 3 | APIC3 | 192.168.255.3/24 | 192.168.255.254 |
 
-- 三台 APIC 的 Fabric Name、Infra VLAN 或 TEP Pool 不一致。
-- Controller ID 重複。
-- 管理 IP/Gateway 輸入錯誤。
+## 本章驗證
 
-# 第 4 章 Fabric Switch Discovery Node Registration 與 OOB Management
-
-## 學習目標
-
-探索並以序號註冊 Spine/Leaf，恢復交換器 OOB 管理。
-
-## GUI 手動步驟
-
-1. 前往 **Fabric > Inventory > Fabric Membership**。
-2. 依序核對序號並設定：101/POC-S101、201/POC-L201、202/POC-L202，Pod 均為 1。
-3. 前往 **Tenants > mgmt > Node Management Addresses**，建立 OOB Node Management Policy。
-4. 設定 Spine `.11/24`、Leaf `.21/24`、`.22/24`，Gateway `.254`。
-5. 在 `mgmt` Tenant 建立 `oob-default` OOB Contract，使用 `default` Filter，並由 Out-of-Band EPG `default` 提供此 Contract。
-6. 建立允許 `0.0.0.0/0` 的 `LAB_OOB` External Management Network，並設為 `oob-default` Contract 的 Consumer。
-
-## 驗證方式
-
-確認 Fabric Membership 三台交換器均 Active，並由跳板機 SSH 至三個 OOB IP。
-
-## 自動化指令
+1. 登入 `https://192.168.255.1`。
+2. 前往 **System > Controllers**。
+3. 確認 Controller 1、2、3 都是 `Fully Fit`。
+4. 執行：
 
 ```powershell
-python aci_lab.py apply --chapter 4 --dry-run
-python aci_lab.py apply --chapter 4
-python aci_lab.py verify --chapter 4
+python .\aci_lab.py status
 ```
 
-執行第 4 章自動套用前，工具會確認三台交換器的序號存在於 Fabric 待探索清單或已註冊節點清單；已完成 Node Registration 的交換器不會因為離開待探索清單而被誤判為缺少。
+畫面應顯示 `APIC Cluster: Fully Fit`；第 4～11 章為 `INCOMPLETE` 是正常結果。
 
-## 清理與重做
+# 第 4 章 Fabric Discovery、Node Registration 與 OOB Management
 
-一般 `cleanup` 保留 Node Registration 與 OOB Management；只有 `reset-fabric` 會清除 Fabric Membership。
+## 本章目標
 
-## 常見錯誤
+註冊 Spine/Leaf，設定交換器 OOB IP，並建立完整的 OOB Contract Provider/Consumer 關係。
 
-- 探索序號不符時工具會拒絕註冊。
-- `0.0.0.0/0` 只適用隔離 LAB，禁止複製到正式環境。
+## Task 1：確認 Discovery 並註冊節點
+
+1. 前往 **Fabric > Inventory > Fabric Membership**。
+2. 依序號找到待註冊設備；不要只依暫時名稱判斷。
+3. 按 **Register**，輸入：
+
+| Serial Number | Pod ID | Node ID | Node Name | Node Type |
+|---|---:|---:|---|---|
+| SAL1938P7BJ | 1 | 101 | POC-S101 | Spine |
+| FDO223907JF | 1 | 201 | POC-L201 | Leaf |
+| FDO213917EN | 1 | 202 | POC-L202 | Leaf |
+
+4. 每註冊一台都按 **Refresh**，等待狀態成為 `Active`。
+
+## Task 2：設定交換器 Static OOB Address
+
+1. 前往 **Tenants > mgmt > Node Management Addresses > Static Node Management Addresses**。
+2. 建立三筆 Out-of-Band Static Node Management Address：
+
+| Node ID | IPv4 Address | IPv4 Gateway | Management EPG |
+|---:|---|---|---|
+| 101 | 192.168.255.11/24 | 192.168.255.254 | default Out-of-Band EPG |
+| 201 | 192.168.255.21/24 | 192.168.255.254 | default Out-of-Band EPG |
+| 202 | 192.168.255.22/24 | 192.168.255.254 | default Out-of-Band EPG |
+
+3. 儲存設定。
+
+## Task 3：建立 OOB Contract
+
+1. 在 `mgmt` Tenant 展開 **Contracts**，建立 Out-of-Band Contract。
+2. 輸入：
+
+| Field Name | Value |
+|---|---|
+| Name | oob-default |
+| Description | Cisco ACI LAB Guide |
+
+3. 在 Contract 下建立 Subject：
+
+| Field Name | Value |
+|---|---|
+| Name | oob-default |
+| Filter | default |
+
+## Task 4：設定 Provider 與 Consumer
+
+1. 前往 **Tenants > mgmt > Node Management EPGs**。
+2. 選取 **Out-of-Band EPG-default**，在 Provided Contracts 加入 `oob-default`。
+3. 前往 **External Management Network Instance Profiles**。
+4. 建立：
+
+| Field Name | Value |
+|---|---|
+| Name | LAB_OOB |
+| Description | Cisco ACI LAB Guide |
+| External Management Network | 0.0.0.0/0 |
+| Consumed Contract | oob-default |
+
+5. 儲存後確認沒有 `Could not resolve the target` 警告。
+
+## 本章驗證
+
+1. Fabric Membership 的三台交換器均為 `Active`。
+2. Out-of-Band EPG `default` 提供 `oob-default`。
+3. `LAB_OOB` 使用 `oob-default`。
+4. 從跳板機測試三台交換器 TCP 22。
+5. 執行：
+
+```powershell
+python .\aci_lab.py verify --chapter 4
+```
+
+所有項目應為 `MATCHED`。
+
+## 自動化對照
+
+```powershell
+python .\aci_lab.py apply --chapter 4 --dry-run
+python .\aci_lab.py apply --chapter 4
+python .\aci_lab.py verify --chapter 4
+```
+
+一般 `cleanup` 保留第 4 章；只有 `reset-fabric` 會清除 Fabric 基礎設定。
 
 # 第 5 章 Access Interface Policies
 
-## 學習目標
+## 本章目標
 
-建立 1G Link Level、CDP 與 LLDP Policy。
+建立可重複使用的 1G Link Level、CDP、LLDP Policy。本章只定義 Policy，尚未部署到 Port。
 
-## GUI 手動步驟
+## Task 1：Link Level Policy
 
-前往 **Fabric > Access Policies > Policies > Interface**：
+1. 前往 **Fabric > Access Policies > Policies > Interface > Leaf Interfaces > Link Level**。
+2. 建立 Policy：
 
-| Policy | 名稱 | 設定 |
+| Field Name | Value |
+|---|---|
+| Name | IntPol-1G-Auto |
+| Description | Cisco ACI LAB Guide |
+| Speed | 1 Gbps |
+| Auto Negotiation | On |
+
+3. 按 **Submit**。
+
+## Task 2：CDP Policy
+
+1. 前往 **Policies > Interface > Leaf Interfaces > CDP Interface**。
+2. 建立：
+
+| Field Name | Value |
+|---|---|
+| Name | IntPol-CDP-Enable |
+| Description | Cisco ACI LAB Guide |
+| Admin State | Enabled |
+
+## Task 3：LLDP Policy
+
+1. 前往 **Policies > Interface > Leaf Interfaces > LLDP Interface**。
+2. 建立：
+
+| Field Name | Value |
+|---|---|
+| Name | IntPol-LLDP-Enable |
+| Description | Cisco ACI LAB Guide |
+| Receive State | Enabled |
+| Transmit State | Enabled |
+
+## 本章驗證與自動化
+
+```powershell
+python .\aci_lab.py apply --chapter 5 --dry-run
+python .\aci_lab.py apply --chapter 5
+python .\aci_lab.py verify --chapter 5
+```
+
+預期三個 Policy 都顯示 `MATCHED`。
+
+# 第 6 章 VLAN Pools、Physical Domains 與 AAEP
+
+## 本章目標
+
+建立 Static VLAN Namespace、Physical Domain 與共用 AAEP。VLAN Pool 定義 Encap；Domain 定義 EPG 的實體部署範圍；AAEP 將 Domain 與 Port Policy Group 串接。
+
+## Task 1：建立 VLAN Pools
+
+1. 前往 **Fabric > Access Policies > Pools > VLAN**。
+2. 右鍵選擇 **Create VLAN Pool**。
+3. 依序建立：
+
+| Name | Allocation Mode | Range From | Range To | Block Mode |
+|---|---|---:|---:|---|
+| VLAN_WEB | Static Allocation | 2101 | 2110 | Static Allocation |
+| VLAN_AP | Static Allocation | 2201 | 2210 | Static Allocation |
+| VLAN_DB | Static Allocation | 2301 | 2310 | Static Allocation |
+
+每個 Pool 的 Description 填入 `Cisco ACI LAB Guide`。建立 Encap Block 時先按 `+`，輸入 From/To，再按 **OK** 與 **Submit**。
+
+## Task 2：建立 Physical Domains
+
+1. 前往 **Physical and External Domains > Physical Domains**。
+2. 建立：
+
+| Physical Domain | VLAN Pool | Description |
 |---|---|---|
-| Link Level | IntPol-1G-Auto | 1G, Auto Negotiation On |
-| CDP | IntPol-CDP-Enable | Enabled |
-| LLDP | IntPol-LLDP-Enable | Rx/Tx Enabled |
+| DOM_PHY_WEB | VLAN_WEB | Cisco ACI LAB Guide |
+| DOM_PHY_AP | VLAN_AP | Cisco ACI LAB Guide |
+| DOM_PHY_DB | VLAN_DB | Cisco ACI LAB Guide |
 
-## 驗證與自動化
+## Task 3：建立 AAEP
 
-```powershell
-python aci_lab.py apply --chapter 5
-python aci_lab.py verify --chapter 5
-```
+1. 前往 **Global Policies > Attachable Access Entity Profiles**。
+2. 建立：
 
-## 清理與重做
+| Field Name | Value |
+|---|---|
+| Name | AEP_PHY |
+| Description | Cisco ACI LAB Guide |
+| Domains | DOM_PHY_WEB, DOM_PHY_AP, DOM_PHY_DB |
 
-`python aci_lab.py cleanup --chapter 5` 會刪除第 5-11 章 LAB 物件。
+3. 按 **Submit**。
 
-## 常見錯誤
-
-- 不要建立 10G Policy 或 LACP Policy。
-- 名稱大小寫必須完全一致。
-
-# 第 6 章 VLAN Pools Physical Domains 與 AAEP
-
-## 學習目標
-
-建立 Static VLAN Namespace、Physical Domain 與共用 AAEP。
-
-## GUI 手動步驟
-
-前往 **Fabric > Access Policies > Pools > VLAN** 建立：
-
-| Pool | Mode | Block |
-|---|---|---|
-| VLAN_WEB | Static | 2101-2110 |
-| VLAN_AP | Static | 2201-2210 |
-| VLAN_DB | Static | 2301-2310 |
-
-前往 **Physical and External Domains** 建立 `DOM_PHY_WEB/AP/DB` 並關聯對應 Pool。建立 `AEP_PHY`，關聯三個 Domain。
-
-## 驗證與自動化
+## 本章驗證與自動化
 
 ```powershell
-python aci_lab.py prepare --chapter 6
-python aci_lab.py apply --chapter 6
-python aci_lab.py verify --chapter 6
+python .\aci_lab.py prepare --chapter 6
+python .\aci_lab.py apply --chapter 6
+python .\aci_lab.py verify --chapter 6
 ```
 
-## 清理與重做
+確認三個 Pool 為 Static、Domain 對應正確、`AEP_PHY` 關聯三個 Domain。
 
-`cleanup --chapter 6` 會先移除後續關聯，再刪除 Domain、AAEP 與 VLAN Pool。
+# 第 7 章 Leaf Interface Policy Group、Interface Profile 與 Switch Profile
 
-## 常見錯誤
+## 本章目標
 
-- VLAN Block 必須是 Static。
-- Domain 與錯誤 VLAN Pool 關聯會造成 Encap 無法部署。
+把第 5、6 章的 Policy 組成一個 Access Port Policy Group，只部署到 Leaf 201/202 的 `eth1/1-2`。四個 Port 都是獨立 Port，不建立 Port Channel 或 vPC。
 
-# 第 7 章 Leaf Interface Profiles Policy Groups 與 Switch Profiles
+## Task 1：建立 Policy Group
 
-## 學習目標
+1. 前往 **Fabric > Access Policies > Interface Policy Groups > Leaf Access Port**。
+2. 建立：
 
-把第 5、6 章政策組合後，只部署到兩台 Leaf 的 `eth1/1-2`。
+| Field Name | Value |
+|---|---|
+| Name | IfPolGrp-Access-Server_1G |
+| Description | Cisco ACI LAB Guide |
+| Link Level Policy | IntPol-1G-Auto |
+| CDP Interface Policy | IntPol-CDP-Enable |
+| LLDP Interface Policy | IntPol-LLDP-Enable |
+| Attached Entity Profile | AEP_PHY |
 
-## GUI 手動步驟
+3. 其他欄位維持預設值，按 **Submit**。
 
-1. 建立 `IfPolGrp-Access-Server_1G`，關聯 `IntPol-1G-Auto`、CDP、LLDP 與 `AEP_PHY`。
-2. 建立 `IntProf-LF201/202`。
-3. 每個 Profile 建立 `IntSel-eth1_1` 與 `IntSel-eth1_2`，分別選取單一 Port。
-4. 建立 `SwProf-LF201/202`，Node Block 分別為 201 與 202。
-5. 關聯對應 Interface Profile。
+## Task 2：建立 Interface Profiles
 
-## 驗證與自動化
+1. 前往 **Interfaces > Leaf Interfaces > Profiles**。
+2. 建立 `IntProf-LF201`，再建立兩個 Access Port Selector：
+
+| Selector | Card | From Port | To Port | Policy Group |
+|---|---:|---:|---:|---|
+| IntSel-eth1_1 | 1 | 1 | 1 | IfPolGrp-Access-Server_1G |
+| IntSel-eth1_2 | 1 | 2 | 2 | IfPolGrp-Access-Server_1G |
+
+3. 建立 `IntProf-LF202`，使用相同兩個 Selector 與 Policy Group。
+
+## Task 3：建立 Switch Profiles
+
+1. 前往 **Switches > Leaf Switches > Profiles**。
+2. 建立 Leaf 201 Profile：
+
+| Field Name | Value |
+|---|---|
+| Name | SwProf-LF201 |
+| Leaf Selector Name | Leaf201 |
+| Node Block From/To | 201 / 201 |
+| Associated Interface Profile | IntProf-LF201 |
+
+3. 建立 Leaf 202 Profile：
+
+| Field Name | Value |
+|---|---|
+| Name | SwProf-LF202 |
+| Leaf Selector Name | Leaf202 |
+| Node Block From/To | 202 / 202 |
+| Associated Interface Profile | IntProf-LF202 |
+
+## 本章驗證與自動化
+
+1. 每台 Leaf 只關聯自己的 Interface Profile。
+2. 每個 Profile 只有 `eth1/1-2`；不可包含 `eth1/3-4`。
+3. 執行：
 
 ```powershell
-python aci_lab.py prepare --chapter 8
+python .\aci_lab.py prepare --chapter 7
+python .\aci_lab.py apply --chapter 7
+python .\aci_lab.py verify --chapter 7
 ```
 
-若第 1-6 章已完成，第 7 章缺少，工具只建立或修正第 7 章管理欄位。
+# 第 8 章 Tenant、VRF 與 Bridge Domains
 
-## 清理與常見錯誤
+## 本章目標
 
-`cleanup --chapter 7` 會移除第 7-11 章。不要把 Selector 延伸到 `eth1/3-4`。
+建立 `TN_POC`、`VRF_POC` 與三個可路由 BD。所有 BD 啟用 Unicast Routing、ARP Flood，L2 Unknown Unicast 使用 Flood。
 
-# 第 8 章 Tenant VRF 與 Bridge Domains
+## Task 1：建立 Tenant 與 VRF
 
-## 學習目標
+1. 前往 **Tenants > Add Tenant**。
+2. 建立 Tenant：
 
-建立 `TN_POC`、`VRF_POC` 與三個可路由 BD。
+| Field Name | Value |
+|---|---|
+| Name | TN_POC |
+| Description | Cisco ACI LAB Guide |
 
-## GUI 手動步驟
+3. 開啟 `TN_POC > Networking > VRFs`。
+4. 建立 VRF：
 
-前往 **Tenants > Add Tenant** 建立 `TN_POC`，再建立 VRF 與 BD：
+| Field Name | Value |
+|---|---|
+| Name | VRF_POC |
+| Description | Cisco ACI LAB Guide |
 
-| BD | Gateway | Scope | Unicast Routing | L2 Unknown | ARP Flood |
-|---|---|---|---|---|---|
-| BD_WEB | 10.1.0.254/24 | Public | Enabled | Flood | Enabled |
-| BD_AP | 10.2.0.254/24 | Public | Enabled | Flood | Enabled |
-| BD_DB | 10.3.0.254/24 | Public | Enabled | Flood | Enabled |
+## Task 2：建立 Bridge Domains
 
-## 驗證與自動化
+1. 前往 **TN_POC > Networking > Bridge Domains**。
+2. 建立 `BD_WEB`，在 Main/Advanced 頁面設定：
+
+| Field Name | Value |
+|---|---|
+| Name | BD_WEB |
+| Description | Cisco ACI LAB Guide |
+| VRF | VRF_POC |
+| Unicast Routing | Enabled |
+| L2 Unknown Unicast | Flood |
+| ARP Flooding | Enabled |
+
+3. 在 Subnets 按 `+`，輸入 Gateway `10.1.0.254/24`，Scope 選 `Public`。
+4. 以相同 Routing/Flood 設定建立：
+
+| BD | Gateway | Scope | VRF |
+|---|---|---|---|
+| BD_AP | 10.2.0.254/24 | Public | VRF_POC |
+| BD_DB | 10.3.0.254/24 | Public | VRF_POC |
+
+> 本版未建立 L3Out；Public Scope 不代表 Subnet 已對外公告。
+
+## 本章驗證與自動化
 
 ```powershell
-python aci_lab.py prepare --chapter 8
-python aci_lab.py apply --chapter 8
-python aci_lab.py verify --chapter 8
+python .\aci_lab.py prepare --chapter 8
+python .\aci_lab.py apply --chapter 8
+python .\aci_lab.py verify --chapter 8
 ```
 
-## 清理與常見錯誤
-
-`cleanup --chapter 8` 會刪除整個 `TN_POC` 及後續物件。Subnet Scope Public 在本版沒有 L3Out，因此不會實際對外公告。
+`prepare --chapter 8` 只完成第 4～7 章，不會建立第 8 章。
 
 # 第 9 章 Application Profile 與 EPG
 
-## 學習目標
+## 本章目標
 
-建立 `AP_POC` 與 WEB/AP/DB 三個 EPG，關聯 BD 與 Physical Domain。
+建立 `AP_POC` 與 WEB/AP/DB 三個 EPG，關聯正確的 BD 與 Physical Domain。本章尚不建立 Static Port。
 
-## GUI 手動步驟
+## Task 1：建立 Application Profile
 
-前往 **TN_POC > Application Profiles** 建立 `AP_POC`：
+1. 前往 **Tenants > TN_POC > Application Profiles**。
+2. 建立：
 
-| EPG | BD | Physical Domain |
+| Field Name | Value |
+|---|---|
+| Name | AP_POC |
+| Description | Cisco ACI LAB Guide |
+
+## Task 2：建立三個 EPG
+
+1. 在 `AP_POC` 下建立 Application EPG。
+2. 選擇 BD，儲存 EPG。
+3. 在 EPG 下開啟 **Domains (VMs and Bare-Metals)**，加入 Physical Domain。
+4. Deployment/Resolution Immediacy 都選 `Immediate`。
+5. 依序建立：
+
+| EPG | Bridge Domain | Physical Domain |
 |---|---|---|
 | EPG_WEB | BD_WEB | DOM_PHY_WEB |
 | EPG_AP | BD_AP | DOM_PHY_AP |
 | EPG_DB | BD_DB | DOM_PHY_DB |
 
-## 驗證與自動化
+每個 EPG 的 Description 都填入 `Cisco ACI LAB Guide`。
+
+## 本章驗證與自動化
+
+1. 每個 EPG 都關聯正確 BD/Domain，Static Ports 仍為空白。
+2. 執行：
 
 ```powershell
-python aci_lab.py apply --chapter 9
-python aci_lab.py verify --chapter 9
+python .\aci_lab.py prepare --chapter 9
+python .\aci_lab.py apply --chapter 9
+python .\aci_lab.py verify --chapter 9
 ```
 
-## 清理與常見錯誤
+# 第 10 章 Permit All Filters 與 Contracts
 
-此章尚未設定 Static Path。不要把 EPG 關聯到錯誤 BD 或 Domain。
+## 本章目標
 
-# 第 10 章 Contracts 與 Permit All Filter
+建立 WEB 到 AP、AP 到 DB 的兩段 Contract。Consumer 發起流量，Provider 提供服務。本 LAB 使用 Permit All 方便觀察關係，正式環境不可照搬。
 
-## 學習目標
+## Task 1：建立 WEB-to-AP Filter 與 Contract
 
-建立兩條具方向性的 Contract 關係並理解 ACI Policy Enforcement。
+1. 前往 **TN_POC > Contracts > Filters**。
+2. 建立 Filter 與 Entry：
 
-## GUI 手動步驟
+| Object/Field | Value |
+|---|---|
+| Filter Name | FLT_WEB_APP_PERMIT_ALL |
+| Description | Cisco ACI LAB Guide |
+| Entry Name | PERMIT_ALL |
+| EtherType | Unspecified |
 
-1. 建立 `FLT_WEB_APP_PERMIT_ALL` 與 Entry `PERMIT_ALL`。
-2. 建立 Contract `web_app`、Subject `SUBJ_WEB_APP`；WEB 為 Consumer，AP 為 Provider。
-3. 建立 `FLT_APP_DB_PERMIT_ALL`。
-4. 建立 Contract `app_db`、Subject `SUBJ_APP_DB`；AP 為 Consumer，DB 為 Provider。
+3. 前往 **Contracts > Standard**，建立：
 
-## 驗證與自動化
+| Object/Field | Value |
+|---|---|
+| Contract Name | web_app |
+| Scope | Tenant |
+| Description | Cisco ACI LAB Guide |
+| Subject Name | SUBJ_WEB_APP |
+| Filter | FLT_WEB_APP_PERMIT_ALL |
+
+4. 在 `EPG_WEB > Contracts` 加入 Consumed Contract `web_app`。
+5. 在 `EPG_AP > Contracts` 加入 Provided Contract `web_app`。
+
+## Task 2：建立 APP-to-DB Filter 與 Contract
+
+| Object/Field | Value |
+|---|---|
+| Filter Name | FLT_APP_DB_PERMIT_ALL |
+| Entry Name / EtherType | PERMIT_ALL / Unspecified |
+| Contract Name / Scope | app_db / Tenant |
+| Subject Name | SUBJ_APP_DB |
+| Subject Filter | FLT_APP_DB_PERMIT_ALL |
+
+1. 在 `EPG_AP` 加入 Consumed Contract `app_db`。
+2. 在 `EPG_DB` 加入 Provided Contract `app_db`。
+3. 不要建立 EPG_WEB 到 EPG_DB 的直接 Contract。
+
+## 本章驗證
+
+| EPG | Consumed | Provided |
+|---|---|---|
+| EPG_WEB | web_app | - |
+| EPG_AP | app_db | web_app |
+| EPG_DB | - | app_db |
 
 ```powershell
-python aci_lab.py apply --chapter 10
-python aci_lab.py verify --chapter 10
+python .\aci_lab.py prepare --chapter 10
+python .\aci_lab.py apply --chapter 10
+python .\aci_lab.py verify --chapter 10
 ```
-
-## 清理與常見錯誤
-
-本 LAB 使用 Permit All 只為降低初學門檻。正式環境應限制 EtherType、Protocol 與 Port。不要建立 WEB 到 DB 的直接 Contract。
 
 # 第 11 章 Static Port Binding
 
-## 學習目標
+## 本章目標
 
-把每個 EPG 以 Tagged VLAN 綁定至兩台 Leaf 的四條 ESXi 路徑。
+將三個 EPG 以 Tagged VLAN 綁定到 Leaf 201/202 的 `eth1/1-2`。介面是獨立 Switch Port，Mode 使用 Regular，不建立 vPC Path。
 
-## GUI 手動步驟
+## 操作原理
 
-在每個 EPG 的 **Static Ports** 建立：
+ESXi Standard vSwitch 的兩個 Uplink 都是 Active，Port Group 負責加 VLAN Tag。因此 APIC Mode 必須為 `Regular`，不可選 Native/Untagged。
 
-| EPG | Encap | Path | Mode |
-|---|---:|---|---|
-| EPG_WEB | 2101 | Leaf 201/202 eth1/1-2 | Regular |
-| EPG_AP | 2201 | Leaf 201/202 eth1/1-2 | Regular |
-| EPG_DB | 2301 | Leaf 201/202 eth1/1-2 | Regular |
+## Task 1：建立 EPG_WEB Binding
 
-每個 EPG 共四條 Path，總計十二條。Regular 表示 Tagged/Trunk，由 ESXi Port Group 加上 VLAN Tag。
+1. 前往 **TN_POC > Application Profiles > AP_POC > EPG_WEB > Static Ports**。
+2. 選擇 **Deploy Static EPG on PC, VPC or Interface**。
+3. 建立第一筆：
 
-## 驗證與自動化
+| Field Name | Value |
+|---|---|
+| Path Type | Port |
+| Pod | pod-1 |
+| Node | POC-L201 (201) |
+| Path | eth1/1 |
+| VLAN | 2101 |
+| Deployment Immediacy | Immediate |
+| Mode | Regular |
+
+4. 再建立 Node 201 `eth1/2`、Node 202 `eth1/1`、Node 202 `eth1/2`，VLAN 都是 `2101`。
+
+## Task 2：建立 EPG_AP 與 EPG_DB Binding
+
+| EPG | Nodes | Interfaces | VLAN | Deployment | Mode |
+|---|---|---|---:|---|---|
+| EPG_AP | 201, 202 | eth1/1, eth1/2 | 2201 | Immediate | Regular |
+| EPG_DB | 201, 202 | eth1/1, eth1/2 | 2301 | Immediate | Regular |
+
+每個 EPG 各四條，共十二條。確認 Path 是 `paths-201/202`，不是 `protpaths`；不可使用 `eth1/3-4`。
+
+## 本章驗證與自動化
 
 ```powershell
-python aci_lab.py apply --chapter 11 --dry-run
-python aci_lab.py apply --chapter 11
-python aci_lab.py verify --chapter 11
+python .\aci_lab.py apply --chapter 11 --dry-run
+python .\aci_lab.py apply --chapter 11
+python .\aci_lab.py verify --chapter 11
 ```
 
-## 清理與常見錯誤
+# 第 12 章 VMware 與 VM Ping 驗證
 
-`cleanup --chapter 11` 只刪除十二條 Binding。不要選用 Native/Untagged，也不要建立 vPC Path。
+## 本章目標
 
-# 第 12 章 VM Ping 驗證
+使用既有 VMware Standard vSwitch 與 VM，驗證同 EPG 跨 ESXi、Contract 跨 BD，以及沒有直接 Contract 時的隔離。本章不修改 VMware。
 
-## 學習目標
+## 開始前確認
 
-人工驗證同 EPG、跨 ESXi 與 Contract 控制的跨 BD 流量。
+- POC-SRV1/2 的 `vmnic2/3` 為雙 Active Uplink。
+- Load Balancing 維持 `Route based on originating virtual port ID`。
+- VMware Port Group VLAN 與 EPG Encap 相同。
 
-## VM 位址
+## Task 1：確認 VM 參數
 
-| 類型 | VM | IP 範圍 | Gateway | 單數位置 | 雙數位置 |
-|---|---|---|---|---|---|
-| WEB | POC-WEB1-4 | 10.1.0.1-4/24 | 10.1.0.254 | POC-SRV1 | POC-SRV2 |
-| AP | POC-AP1-4 | 10.2.0.1-4/24 | 10.2.0.254 | POC-SRV1 | POC-SRV2 |
-| DB | POC-DB1-4 | 10.3.0.1-4/24 | 10.3.0.254 | POC-SRV1 | POC-SRV2 |
+| VM | IP/Gateway | EPG/VLAN | ESXi |
+|---|---|---|---|
+| POC-WEB1/3 | 10.1.0.1/3, GW .254 | EPG_WEB / 2101 | POC-SRV1 |
+| POC-WEB2/4 | 10.1.0.2/4, GW .254 | EPG_WEB / 2101 | POC-SRV2 |
+| POC-AP1/3 | 10.2.0.1/3, GW .254 | EPG_AP / 2201 | POC-SRV1 |
+| POC-AP2/4 | 10.2.0.2/4, GW .254 | EPG_AP / 2201 | POC-SRV2 |
+| POC-DB1/3 | 10.3.0.1/3, GW .254 | EPG_DB / 2301 | POC-SRV1 |
+| POC-DB2/4 | 10.3.0.2/4, GW .254 | EPG_DB / 2301 | POC-SRV2 |
 
-## 人工驗證矩陣
+所有 Mask 為 `/24`，Gateway 為該網段 `.254`。
 
-| 測試 | 範例 | 預期 |
+## Task 2：確認 Endpoint Learning
+
+1. 前往各 EPG 的 **Operational > Client End-Points**。
+2. 確認對應 VM 的 MAC/IP 已被學習。
+3. 若未出現，檢查 VM Power、Port Group VLAN、Static Path 與 ESXi Uplink。
+
+## Task 3：Ping 測試
+
+| Source | Destination | 測試目的 | 預期 |
+|---|---|---|---|
+| POC-WEB1 | 10.1.0.2 | 同 EPG 跨 ESXi | Success |
+| POC-AP1 | 10.2.0.2 | 同 EPG 跨 ESXi | Success |
+| POC-DB1 | 10.3.0.2 | 同 EPG 跨 ESXi | Success |
+| POC-WEB1 | 10.2.0.2 | WEB Consumer 到 AP Provider | Success |
+| POC-AP1 | 10.3.0.2 | AP Consumer 到 DB Provider | Success |
+| POC-WEB1 | 10.3.0.2 | 無直接 Contract | Fail |
+
+若非預期失敗，依序檢查 OS Firewall、IP/Mask/Gateway、Port Group VLAN、Endpoint Learning、Static Path、Contract 方向。
+
+# 第 13 章 狀態檢查、跳章準備、Cleanup 與疑難排解
+
+## Task 1：檢查狀態
+
+```powershell
+python .\aci_lab.py status
+python .\aci_lab.py verify --chapter 8
+```
+
+`status` 檢查第 4～11 章；`verify` 只檢查指定章節，兩者都不修改 APIC。
+
+## Task 2：準備指定章節
+
+```powershell
+python .\aci_lab.py prepare --chapter 8 --dry-run
+python .\aci_lab.py prepare --chapter 8
+```
+
+此命令完成第 4～7 章，但不建立第 8 章。正確物件保持不變，缺少物件建立，受管理欄位錯誤時修正，未管理欄位保留。
+
+| Command | 結果 |
+|---|---|
+| `prepare --chapter 5` | 完成第 4 章 |
+| `prepare --chapter 8` | 完成第 4～7 章 |
+| `prepare --chapter 11` | 完成第 4～10 章 |
+| `prepare --chapter 12` | 完成第 4～11 章 |
+
+## Task 3：Cleanup
+
+```powershell
+python .\aci_lab.py cleanup --chapter 8 --dry-run
+python .\aci_lab.py cleanup --chapter 8
+```
+
+正式執行時輸入 `CLEANUP`。指定章節與後續章節會反向刪除：
+
+| Command | 刪除 | 保留 |
 |---|---|---|
-| 同 EPG 跨 ESXi | WEB1 → WEB2 | 成功 |
-| WEB Consumer 到 AP Provider | WEB1 → AP2 | 成功 |
-| AP Consumer 到 DB Provider | AP1 → DB2 | 成功 |
-| 無直接 Contract | WEB1 → DB2 | 失敗 |
+| `cleanup --chapter 11` | 11 | 4-10 |
+| `cleanup --chapter 8` | 8-11 | 4-7 |
+| `cleanup --chapter 5` | 5-11 | Chapter 4 |
+| `cleanup` | 5-11 | Cluster、Registration、OOB |
 
-工具不登入 ESXi 或 VM，也不記錄 Ping 結果。
+即使輸入 `cleanup --chapter 4`，也會被限制為從第 5 章開始，避免清除 Fabric 基礎設定。
 
-## 常見錯誤
+## Task 4：Cluster 安全機制
 
-- VM OS 防火牆阻擋 ICMP。
-- Port Group VLAN 與 EPG Encap 不一致。
-- VM Gateway 未設為各 BD 的 `.254`。
+| Cluster 狀態 | 唯讀 | Policy 寫入 |
+|---|---|---|
+| Fully Fit | Allowed | Allowed |
+| 有 Quorum、非 Fully Fit | Allowed | 顯示紅色警告，輸入 `YES` 才繼續 |
+| 無 Quorum | Allowed | Blocked |
 
-# 第 13 章 狀態檢查 章節還原與疑難排解
+## Task 5：疑難排解
 
-## 狀態檢查
+1. 閱讀終端紅色錯誤與 APIC Error Code。
+2. 執行 `status` 確認 Endpoint 與 Cluster。
+3. 使用 `--dry-run` 查看預計變更。
+4. 在 APIC GUI 依 DN 找到物件。
+5. 檢查 `logs` 最新檔案；工具只在異常時記錄。
+6. 修正後重跑，已正確物件會被保留。
 
-```powershell
-python aci_lab.py status
-python aci_lab.py verify --chapter 11
-```
+## Appendix A：命名總表
 
-## 跳章準備
+| 類別 | 物件 |
+|---|---|
+| Interface Policies | IntPol-1G-Auto, IntPol-CDP-Enable, IntPol-LLDP-Enable |
+| VLAN Pools | VLAN_WEB, VLAN_AP, VLAN_DB |
+| Physical Domains | DOM_PHY_WEB, DOM_PHY_AP, DOM_PHY_DB |
+| AAEP / Policy Group | AEP_PHY / IfPolGrp-Access-Server_1G |
+| Interface Profiles | IntProf-LF201, IntProf-LF202 |
+| Switch Profiles | SwProf-LF201, SwProf-LF202 |
+| Tenant / VRF | TN_POC / VRF_POC |
+| Bridge Domains | BD_WEB, BD_AP, BD_DB |
+| Application / EPG | AP_POC / EPG_WEB, EPG_AP, EPG_DB |
+| Filters | FLT_WEB_APP_PERMIT_ALL, FLT_APP_DB_PERMIT_ALL |
+| Contracts | web_app, app_db |
 
-```powershell
-python aci_lab.py prepare --chapter 8
-```
-
-工具即時檢查第 4-7 章；正確物件跳過，缺少物件建立，LAB 管理欄位不符時修正，未管理欄位保留。
-
-## 章節還原
-
-```powershell
-python aci_lab.py cleanup --chapter 8 --dry-run
-python aci_lab.py cleanup --chapter 8
-```
-
-指定章節與相依的後續章節會反向刪除。完整 `cleanup` 回到第 5 章開始前，但保留 Cluster、Node Registration 與 OOB Management。
-
-## Cluster 安全
-
-- 三台 Fully Fit：正常執行。
-- 非 Fully Fit 但有 Quorum：顯示風險並要求輸入 `YES`。
-- 無 Quorum：禁止 Policy 寫入；唯讀命令仍可使用。
-- `reset-fabric` 是唯一例外，但仍需完整 Preflight 與確認字串。
-
-## 疑難排解順序
-
-1. 檢查 `logs/` 中最新的 Warning/Error Log。
-2. 先確認 APIC Endpoint、Cluster 與 Quorum。
-3. 用 `--dry-run` 檢查預計差異。
-4. 在 APIC GUI 依物件 DN 核對實際值。
-5. 修正連線或設定後重跑；工具會保留已成功物件並接續。
-
-## 附錄 A 常用命令
+## Appendix B：常用命令
 
 ```powershell
-python aci_lab.py status
-python aci_lab.py prepare --chapter 8 --dry-run
-python aci_lab.py prepare --chapter 8
-python aci_lab.py apply --chapter 11
-python aci_lab.py verify --chapter 11
-python aci_lab.py cleanup --chapter 11
-python aci_lab.py cleanup
-python aci_lab.py reset-fabric --dry-run
+python .\aci_lab.py status
+python .\aci_lab.py verify --chapter 11
+python .\aci_lab.py prepare --chapter 8 --dry-run
+python .\aci_lab.py prepare --chapter 8
+python .\aci_lab.py apply --chapter 11
+python .\aci_lab.py cleanup --chapter 11
+python .\aci_lab.py cleanup
+python .\aci_lab.py reset-fabric --dry-run
 ```
-
-## 附錄 B Cisco 清除命令參考
-
-交換器使用 `setup-clean-config.sh` 後 reload。APIC 使用 `acidiag touch clean`、`acidiag touch setup` 後 reboot。這些命令具破壞性，只能由 `reset-fabric` 的受保護流程觸發。
