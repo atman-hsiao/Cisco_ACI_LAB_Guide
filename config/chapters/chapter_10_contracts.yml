@@ -1,18 +1,26 @@
 chapter: 10
 name: Permit All Contracts
 objects:
-  - {class: vzFilter, dn: uni/tn-TN_POC/flt-FLT_WEB_APP_PERMIT_ALL, attributes: {name: FLT_WEB_APP_PERMIT_ALL, descr: Cisco ACI LAB Guide}}
-  - {class: vzEntry, dn: uni/tn-TN_POC/flt-FLT_WEB_APP_PERMIT_ALL/e-PERMIT_ALL, attributes: {name: PERMIT_ALL, etherT: unspecified}}
-  - {class: vzBrCP, dn: uni/tn-TN_POC/brc-web_app, attributes: {name: web_app, scope: tenant, descr: Cisco ACI LAB Guide}}
-  - {class: vzSubj, dn: uni/tn-TN_POC/brc-web_app/subj-SUBJ_WEB_APP, attributes: {name: SUBJ_WEB_APP}}
-  - {class: vzRsSubjFiltAtt, dn: "uni/tn-TN_POC/brc-web_app/subj-SUBJ_WEB_APP/rssubjFiltAtt-FLT_WEB_APP_PERMIT_ALL", attributes: {tnVzFilterName: FLT_WEB_APP_PERMIT_ALL}}
-  - {class: fvRsCons, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB/rscons-web_app, attributes: {tnVzBrCPName: web_app}}
-  - {class: fvRsProv, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rsprov-web_app, attributes: {tnVzBrCPName: web_app}}
-  - {class: vzFilter, dn: uni/tn-TN_POC/flt-FLT_APP_DB_PERMIT_ALL, attributes: {name: FLT_APP_DB_PERMIT_ALL, descr: Cisco ACI LAB Guide}}
-  - {class: vzEntry, dn: uni/tn-TN_POC/flt-FLT_APP_DB_PERMIT_ALL/e-PERMIT_ALL, attributes: {name: PERMIT_ALL, etherT: unspecified}}
-  - {class: vzBrCP, dn: uni/tn-TN_POC/brc-app_db, attributes: {name: app_db, scope: tenant, descr: Cisco ACI LAB Guide}}
-  - {class: vzSubj, dn: uni/tn-TN_POC/brc-app_db/subj-SUBJ_APP_DB, attributes: {name: SUBJ_APP_DB}}
-  - {class: vzRsSubjFiltAtt, dn: "uni/tn-TN_POC/brc-app_db/subj-SUBJ_APP_DB/rssubjFiltAtt-FLT_APP_DB_PERMIT_ALL", attributes: {tnVzFilterName: FLT_APP_DB_PERMIT_ALL}}
-  - {class: fvRsCons, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rscons-app_db, attributes: {tnVzBrCPName: app_db}}
-  - {class: fvRsProv, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB/rsprov-app_db, attributes: {tnVzBrCPName: app_db}}
-
+  - {class: vzFilter, dn: uni/tn-TN_POC/flt-FLT_WEB_AP_PERMIT_ALL, attributes: {name: FLT_WEB_AP_PERMIT_ALL, descr: Cisco ACI LAB Guide}}
+  - {class: vzEntry, dn: uni/tn-TN_POC/flt-FLT_WEB_AP_PERMIT_ALL/e-PERMIT_ALL, attributes: {name: PERMIT_ALL, etherT: unspecified}}
+  - {class: vzBrCP, dn: uni/tn-TN_POC/brc-web_ap, attributes: {name: web_ap, scope: tenant, descr: Cisco ACI LAB Guide}}
+  - {class: vzSubj, dn: uni/tn-TN_POC/brc-web_ap/subj-SUBJ_WEB_AP, attributes: {name: SUBJ_WEB_AP}}
+  - {class: vzRsSubjFiltAtt, dn: "uni/tn-TN_POC/brc-web_ap/subj-SUBJ_WEB_AP/rssubjFiltAtt-FLT_WEB_AP_PERMIT_ALL", attributes: {tnVzFilterName: FLT_WEB_AP_PERMIT_ALL}}
+  - {class: fvRsCons, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB/rscons-web_ap, attributes: {tnVzBrCPName: web_ap}}
+  - {class: fvRsProv, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rsprov-web_ap, attributes: {tnVzBrCPName: web_ap}}
+  - {class: vzFilter, dn: uni/tn-TN_POC/flt-FLT_AP_DB_PERMIT_ALL, attributes: {name: FLT_AP_DB_PERMIT_ALL, descr: Cisco ACI LAB Guide}}
+  - {class: vzEntry, dn: uni/tn-TN_POC/flt-FLT_AP_DB_PERMIT_ALL/e-PERMIT_ALL, attributes: {name: PERMIT_ALL, etherT: unspecified}}
+  - {class: vzBrCP, dn: uni/tn-TN_POC/brc-ap_db, attributes: {name: ap_db, scope: tenant, descr: Cisco ACI LAB Guide}}
+  - {class: vzSubj, dn: uni/tn-TN_POC/brc-ap_db/subj-SUBJ_AP_DB, attributes: {name: SUBJ_AP_DB}}
+  - {class: vzRsSubjFiltAtt, dn: "uni/tn-TN_POC/brc-ap_db/subj-SUBJ_AP_DB/rssubjFiltAtt-FLT_AP_DB_PERMIT_ALL", attributes: {tnVzFilterName: FLT_AP_DB_PERMIT_ALL}}
+  - {class: fvRsCons, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rscons-ap_db, attributes: {tnVzBrCPName: ap_db}}
+  - {class: fvRsProv, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB/rsprov-ap_db, attributes: {tnVzBrCPName: ap_db}}
+obsolete_objects:
+  - {class: fvRsCons, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_WEB/rscons-web_app, match_attributes: {tnVzBrCPName: web_app}}
+  - {class: fvRsProv, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rsprov-web_app, match_attributes: {tnVzBrCPName: web_app}}
+  - {class: fvRsCons, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_AP/rscons-app_db, match_attributes: {tnVzBrCPName: app_db}}
+  - {class: fvRsProv, dn: uni/tn-TN_POC/ap-AP_POC/epg-EPG_DB/rsprov-app_db, match_attributes: {tnVzBrCPName: app_db}}
+  - {class: vzBrCP, dn: uni/tn-TN_POC/brc-web_app, match_attributes: {name: web_app, scope: tenant, descr: Cisco ACI LAB Guide}}
+  - {class: vzBrCP, dn: uni/tn-TN_POC/brc-app_db, match_attributes: {name: app_db, scope: tenant, descr: Cisco ACI LAB Guide}}
+  - {class: vzFilter, dn: uni/tn-TN_POC/flt-FLT_WEB_APP_PERMIT_ALL, match_attributes: {name: FLT_WEB_APP_PERMIT_ALL, descr: Cisco ACI LAB Guide}}
+  - {class: vzFilter, dn: uni/tn-TN_POC/flt-FLT_APP_DB_PERMIT_ALL, match_attributes: {name: FLT_APP_DB_PERMIT_ALL, descr: Cisco ACI LAB Guide}}

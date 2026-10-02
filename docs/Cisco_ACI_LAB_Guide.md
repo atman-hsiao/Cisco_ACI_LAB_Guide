@@ -57,9 +57,9 @@ Leaf `eth1/3-4` 與 ESXi `vmnic4-5` 保留給未來 VMM LAB，本版不可配置
 
 | EPG | Bridge Domain | Gateway | VLAN | Contract 角色 |
 |---|---|---|---:|---|
-| EPG_WEB | BD_WEB | 10.1.0.254/24 | 2101 | Consumer of `web_app` |
-| EPG_AP | BD_AP | 10.2.0.254/24 | 2201 | Provider of `web_app`; Consumer of `app_db` |
-| EPG_DB | BD_DB | 10.3.0.254/24 | 2301 | Provider of `app_db` |
+| EPG_WEB | BD_WEB | 10.1.0.254/24 | 2101 | Consumer of `web_ap` |
+| EPG_AP | BD_AP | 10.2.0.254/24 | 2201 | Provider of `web_ap`; Consumer of `ap_db` |
+| EPG_DB | BD_DB | 10.3.0.254/24 | 2301 | Provider of `ap_db` |
 
 三個 Bridge Domain 都屬於 `VRF_POC`，三個 EPG 都位於 `AP_POC`。
 
@@ -591,7 +591,7 @@ python .\aci_lab.py verify --chapter 9
 
 | Object/Field | Value |
 |---|---|
-| Filter Name | FLT_WEB_APP_PERMIT_ALL |
+| Filter Name | FLT_WEB_AP_PERMIT_ALL |
 | Description | Cisco ACI LAB Guide |
 | Entry Name | PERMIT_ALL |
 | EtherType | Unspecified |
@@ -600,36 +600,36 @@ python .\aci_lab.py verify --chapter 9
 
 | Object/Field | Value |
 |---|---|
-| Contract Name | web_app |
+| Contract Name | web_ap |
 | Scope | Tenant |
 | Description | Cisco ACI LAB Guide |
-| Subject Name | SUBJ_WEB_APP |
-| Filter | FLT_WEB_APP_PERMIT_ALL |
+| Subject Name | SUBJ_WEB_AP |
+| Filter | FLT_WEB_AP_PERMIT_ALL |
 
-4. 在 `EPG_WEB > Contracts` 加入 Consumed Contract `web_app`。
-5. 在 `EPG_AP > Contracts` 加入 Provided Contract `web_app`。
+4. 在 `EPG_WEB > Contracts` 加入 Consumed Contract `web_ap`。
+5. 在 `EPG_AP > Contracts` 加入 Provided Contract `web_ap`。
 
-## Task 2：建立 APP-to-DB Filter 與 Contract
+## Task 2：建立 AP-to-DB Filter 與 Contract
 
 | Object/Field | Value |
 |---|---|
-| Filter Name | FLT_APP_DB_PERMIT_ALL |
+| Filter Name | FLT_AP_DB_PERMIT_ALL |
 | Entry Name / EtherType | PERMIT_ALL / Unspecified |
-| Contract Name / Scope | app_db / Tenant |
-| Subject Name | SUBJ_APP_DB |
-| Subject Filter | FLT_APP_DB_PERMIT_ALL |
+| Contract Name / Scope | ap_db / Tenant |
+| Subject Name | SUBJ_AP_DB |
+| Subject Filter | FLT_AP_DB_PERMIT_ALL |
 
-1. 在 `EPG_AP` 加入 Consumed Contract `app_db`。
-2. 在 `EPG_DB` 加入 Provided Contract `app_db`。
+1. 在 `EPG_AP` 加入 Consumed Contract `ap_db`。
+2. 在 `EPG_DB` 加入 Provided Contract `ap_db`。
 3. 不要建立 EPG_WEB 到 EPG_DB 的直接 Contract。
 
 ## 本章驗證
 
 | EPG | Consumed | Provided |
 |---|---|---|
-| EPG_WEB | web_app | - |
-| EPG_AP | app_db | web_app |
-| EPG_DB | - | app_db |
+| EPG_WEB | web_ap | - |
+| EPG_AP | ap_db | web_ap |
+| EPG_DB | - | ap_db |
 
 ```powershell
 python .\aci_lab.py prepare --chapter 10
@@ -801,8 +801,8 @@ python .\aci_lab.py cleanup --chapter 8
 | Tenant / VRF | TN_POC / VRF_POC |
 | Bridge Domains | BD_WEB, BD_AP, BD_DB |
 | Application / EPG | AP_POC / EPG_WEB, EPG_AP, EPG_DB |
-| Filters | FLT_WEB_APP_PERMIT_ALL, FLT_APP_DB_PERMIT_ALL |
-| Contracts | web_app, app_db |
+| Filters | FLT_WEB_AP_PERMIT_ALL, FLT_AP_DB_PERMIT_ALL |
+| Contracts | web_ap, ap_db |
 
 ## Appendix B：常用命令
 

@@ -59,5 +59,23 @@ class ChapterSevenConfigTests(unittest.TestCase):
         self.assertTrue(all("to" not in obj["attributes"] for obj in blocks))
 
 
+class ChapterTenConfigTests(unittest.TestCase):
+    def test_contract_names_use_ap_not_app(self):
+        root = Path(__file__).resolve().parents[1]
+        chapter = LabConfig(root).chapters[10]
+        managed_names = {
+            str(value)
+            for obj in chapter["objects"]
+            for value in obj["attributes"].values()
+        }
+
+        self.assertIn("web_ap", managed_names)
+        self.assertIn("ap_db", managed_names)
+        self.assertIn("FLT_WEB_AP_PERMIT_ALL", managed_names)
+        self.assertIn("FLT_AP_DB_PERMIT_ALL", managed_names)
+        self.assertNotIn("web_app", managed_names)
+        self.assertNotIn("app_db", managed_names)
+
+
 if __name__ == "__main__":
     unittest.main()

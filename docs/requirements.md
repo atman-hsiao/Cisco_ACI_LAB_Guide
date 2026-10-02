@@ -31,7 +31,7 @@
 - WEB/AP/DB 的 Gateway 分別為 `10.1.0.254/24`、`10.2.0.254/24`、`10.3.0.254/24`。
 - 所有 Subnet Scope 為 Public；BD 開啟 Unicast Routing、L2 Unknown Unicast Flood、ARP Flooding。
 - 三個 EPG 分別使用 VLAN 2101、2201、2301，並綁定兩台 Leaf 的 `eth1/1-2`，Mode 為 Regular/Tagged。
-- `web_app`：WEB Consumer、AP Provider；`app_db`：AP Consumer、DB Provider。
+- `web_ap`：WEB Consumer、AP Provider；`ap_db`：AP Consumer、DB Provider。
 - Contract 使用各自獨立的 Permit All Filter。
 
 ## 自動化行為
@@ -55,4 +55,3 @@
 - 以選單路徑、欄位表與文字說明為主，不依賴逐步截圖。
 - 包含實體拓撲圖與 Tenant 邏輯圖。
 - 每章包含學習目標、概念、GUI 步驟、驗證、自動化、清理與疑難排解。
-
