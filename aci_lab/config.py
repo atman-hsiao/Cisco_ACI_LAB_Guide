@@ -27,7 +27,6 @@ class LabConfig:
             if errors:
                 detail = "; ".join(f"{list(e.path)}: {e.message}" for e in errors)
                 raise ConfigurationError(f"{path}: {detail}")
-            self._apply_aliases(data)
             self.chapters[data["chapter"]] = data
         self._validate_inventory()
 
@@ -41,14 +40,6 @@ class LabConfig:
             raise ConfigurationError(f"{path} 的最上層必須是 mapping")
         return value
 
-    @staticmethod
-    def _apply_aliases(chapter: dict[str, Any]) -> None:
-        for obj in chapter.get("objects", []):
-            aliases = obj.pop("attribute_aliases", {})
-            for source, target in aliases.items():
-                if source in obj["attributes"]:
-                    obj["attributes"][target] = obj["attributes"].pop(source)
-
     def _validate_inventory(self) -> None:
         apics = self.inventory.get("apics", [])
         switches = self.inventory.get("switches", [])
@@ -60,4 +51,3 @@ class LabConfig:
 
     def chapter_range(self, first: int, last: int) -> list[dict[str, Any]]:
         return [self.chapters[n] for n in range(first, last + 1) if n in self.chapters]
-

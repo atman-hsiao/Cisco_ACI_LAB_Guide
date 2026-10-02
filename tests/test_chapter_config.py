@@ -3,6 +3,8 @@ from pathlib import Path
 
 import yaml
 
+from aci_lab.config import LabConfig
+
 
 class ChapterFourConfigTests(unittest.TestCase):
     def test_oob_contract_has_provider_and_consumer(self):
@@ -42,6 +44,19 @@ class ChapterSixConfigTests(unittest.TestCase):
             {obj["attributes"]["name"] for obj in pools},
             {"VLAN_WEB_STATIC", "VLAN_AP_STATIC", "VLAN_DB_STATIC"},
         )
+
+
+class ChapterSevenConfigTests(unittest.TestCase):
+    def test_node_blocks_keep_apic_from_and_to_attribute_names(self):
+        root = Path(__file__).resolve().parents[1]
+        chapter = LabConfig(root).chapters[7]
+        blocks = [obj for obj in chapter["objects"] if obj["class"] == "infraNodeBlk"]
+
+        self.assertEqual(len(blocks), 2)
+        self.assertTrue(all("from_" in obj["attributes"] for obj in blocks))
+        self.assertTrue(all("to_" in obj["attributes"] for obj in blocks))
+        self.assertTrue(all("from" not in obj["attributes"] for obj in blocks))
+        self.assertTrue(all("to" not in obj["attributes"] for obj in blocks))
 
 
 if __name__ == "__main__":

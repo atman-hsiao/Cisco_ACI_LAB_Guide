@@ -22,11 +22,11 @@ objects:
   - {class: infraRsAccBaseGrp, dn: uni/infra/accportprof-IntProf-LF202/hports-IntSel-eth1_2-typ-range/rsaccBaseGrp, attributes: {tDn: uni/infra/funcprof/accportgrp-IfPolGrp-Access-Server_1G}}
   - {class: infraNodeP, dn: uni/infra/nprof-SwProf-LF201, attributes: {name: SwProf-LF201, descr: Cisco ACI LAB Guide}}
   - {class: infraLeafS, dn: uni/infra/nprof-SwProf-LF201/leaves-Leaf201-typ-range, attributes: {name: Leaf201, type: range}}
-  - {class: infraNodeBlk, dn: uni/infra/nprof-SwProf-LF201/leaves-Leaf201-typ-range/nodeblk-block1, attributes: {name: block1, from_: "201", to_: "201"}, attribute_aliases: {from_: from, to_: to}}
+  - {class: infraNodeBlk, dn: uni/infra/nprof-SwProf-LF201/leaves-Leaf201-typ-range/nodeblk-block1, attributes: {name: block1, from_: "201", to_: "201"}}
   - {class: infraRsAccPortP, dn: "uni/infra/nprof-SwProf-LF201/rsaccPortP-[uni/infra/accportprof-IntProf-LF201]", attributes: {tDn: uni/infra/accportprof-IntProf-LF201}}
   - {class: infraNodeP, dn: uni/infra/nprof-SwProf-LF202, attributes: {name: SwProf-LF202, descr: Cisco ACI LAB Guide}}
   - {class: infraLeafS, dn: uni/infra/nprof-SwProf-LF202/leaves-Leaf202-typ-range, attributes: {name: Leaf202, type: range}}
-  - {class: infraNodeBlk, dn: uni/infra/nprof-SwProf-LF202/leaves-Leaf202-typ-range/nodeblk-block1, attributes: {name: block1, from_: "202", to_: "202"}, attribute_aliases: {from_: from, to_: to}}
+  - {class: infraNodeBlk, dn: uni/infra/nprof-SwProf-LF202/leaves-Leaf202-typ-range/nodeblk-block1, attributes: {name: block1, from_: "202", to_: "202"}}
   - {class: infraRsAccPortP, dn: "uni/infra/nprof-SwProf-LF202/rsaccPortP-[uni/infra/accportprof-IntProf-LF202]", attributes: {tDn: uni/infra/accportprof-IntProf-LF202}}
 obsolete_objects:
   - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSele-Port-1-typ-range, match_attributes: {name: IntSele-Port-1, type: range}, delete_phase: before}

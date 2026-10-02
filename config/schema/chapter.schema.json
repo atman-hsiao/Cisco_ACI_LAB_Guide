@@ -14,8 +14,7 @@
         "properties": {
           "class": {"type": "string", "minLength": 1},
           "dn": {"type": "string", "minLength": 3},
-          "attributes": {"type": "object"},
-          "attribute_aliases": {"type": "object"}
+          "attributes": {"type": "object"}
         },
         "additionalProperties": false
       }
