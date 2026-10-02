@@ -28,3 +28,9 @@ objects:
   - {class: infraLeafS, dn: uni/infra/nprof-SwProf-LF202/leaves-Leaf202-typ-range, attributes: {name: Leaf202, type: range}}
   - {class: infraNodeBlk, dn: uni/infra/nprof-SwProf-LF202/leaves-Leaf202-typ-range/nodeblk-block1, attributes: {name: block1, from_: "202", to_: "202"}, attribute_aliases: {from_: from, to_: to}}
   - {class: infraRsAccPortP, dn: "uni/infra/nprof-SwProf-LF202/rsaccPortP-[uni/infra/accportprof-IntProf-LF202]", attributes: {tDn: uni/infra/accportprof-IntProf-LF202}}
+obsolete_objects:
+  - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSele-Port-1-typ-range, match_attributes: {name: IntSele-Port-1, type: range}, delete_phase: before}
+  - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSele-Port-2-typ-range, match_attributes: {name: IntSele-Port-2, type: range}, delete_phase: before}
+  - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSele-Port-3-typ-range, match_attributes: {name: IntSele-Port-3, type: range}, delete_phase: before}
+  - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF201/hports-IntSele-Port-4-typ-range, match_attributes: {name: IntSele-Port-4, type: range}, delete_phase: before}
+  - {class: infraHPortS, dn: uni/infra/accportprof-IntProf-LF202/hports-IntSele-Port-1-typ-range, match_attributes: {name: IntSele-Port-1, type: range}, delete_phase: before}

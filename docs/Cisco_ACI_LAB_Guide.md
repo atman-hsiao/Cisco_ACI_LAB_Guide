@@ -475,6 +475,8 @@ python .\aci_lab.py apply --chapter 7
 python .\aci_lab.py verify --chapter 7
 ```
 
+若環境中仍有舊版 Ansible 建立的 `IntSele-Port-1`～`IntSele-Port-4` Selector，工具會先核對名稱與類型，再移除這些已知舊 Selector，之後建立本 LAB 使用的 `IntSel-eth1_1` 與 `IntSel-eth1_2`。此遷移會釋放預留給 VMM 的 `eth1/3-4`，不會刪除其他名稱的 Selector。
+
 # 第 8 章 Tenant、VRF 與 Bridge Domains
 
 ## 本章目標

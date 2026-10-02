@@ -101,6 +101,19 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(result[0].action, "DELETE")
         self.assertNotIn("uni/old", client.objects)
 
+    def test_before_phase_deletes_obsolete_object_before_create(self):
+        client = FakeClient({"uni/old-selector": {"name": "OLD", "type": "range"}})
+        chapter = {
+            "chapter": 7,
+            "objects": [{"class": "testClass", "dn": "uni/new-selector", "attributes": {"name": "NEW"}}],
+            "obsolete_objects": [
+                {"class": "testClass", "dn": "uni/old-selector", "match_attributes": {"name": "OLD", "type": "range"}, "delete_phase": "before"},
+            ],
+        }
+        DeclarativeEngine(client).apply_chapter(chapter)
+        self.assertEqual(client.writes[0], ("delete", "testClass", "uni/old-selector"))
+        self.assertEqual(client.writes[1][0], "upsert")
+
 
 if __name__ == "__main__":
     unittest.main()

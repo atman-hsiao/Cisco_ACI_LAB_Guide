@@ -48,14 +48,18 @@ class DeclarativeEngine:
         if self.dry_run:
             return changes
         by_dn = {obj["dn"]: obj for obj in chapter["objects"]}
+        obsolete_by_dn = {obj["dn"]: obj for obj in chapter.get("obsolete_objects", [])}
+        for change in changes:
+            obj = obsolete_by_dn.get(change.dn)
+            if change.action == "DELETE" and obj and obj.get("delete_phase", "after") == "before":
+                self.client.delete(obj["class"], obj["dn"])
         for change in changes:
             if change.action in {"CREATE", "UPDATE"}:
                 obj = by_dn[change.dn]
                 self.client.upsert(obj["class"], obj["dn"], obj["attributes"])
-        obsolete_by_dn = {obj["dn"]: obj for obj in chapter.get("obsolete_objects", [])}
         for change in changes:
-            if change.action == "DELETE" and change.dn in obsolete_by_dn:
-                obj = obsolete_by_dn[change.dn]
+            obj = obsolete_by_dn.get(change.dn)
+            if change.action == "DELETE" and obj and obj.get("delete_phase", "after") == "after":
                 self.client.delete(obj["class"], obj["dn"])
         verification = self.inspect_chapter(chapter)
         failed = [item for item in verification if item.action != "MATCHED"]
